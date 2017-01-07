@@ -4,6 +4,6 @@
 int main(int argc,char*argv[])
 {
 	main_game pomo_pong;
-	pomo_pong.play();
+	pomo_pong.play_game();
 	return 0;
 }
