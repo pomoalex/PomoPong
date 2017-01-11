@@ -113,11 +113,20 @@
     </Link>
   </ItemDefinitionGroup>
   <ItemGroup>
-    <ClCompile Include="main_game.cpp" />
+    <ClCompile Include="ball.cpp" />
+    <ClCompile Include="field.cpp" />
+    <ClCompile Include="frequence_time.cpp" />
+    <ClCompile Include="input.cpp" />
+    <ClCompile Include="paddle.cpp" />
     <ClCompile Include="Source.cpp" />
   </ItemGroup>
   <ItemGroup>
-    <ClInclude Include="main_game.h" />
+    <ClInclude Include="ball.h" />
+    <ClInclude Include="field.h" />
+    <ClInclude Include="frequence_time.h" />
+    <ClInclude Include="input.h" />
+    <ClInclude Include="paddle.h" />
+    <ClInclude Include="source.h" />
   </ItemGroup>
   <ItemGroup>
     <None Include="packages.config" />
