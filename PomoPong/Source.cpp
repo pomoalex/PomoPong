@@ -6,6 +6,8 @@
 #include<math.h>
 #include<sstream>
 
+
+
 bool collided_with_paddle1()
 {
 	if ((int)_ball.x - _ball.radius == paddle1.x + paddle1.width) 
@@ -452,7 +454,7 @@ void play_game()
 
 void init_game()
 {
-	if (SDL_Init(SDL_INIT_EVERYTHING)<0)
+	if (SDL_Init(SDL_INIT_VIDEO | SDL_INIT_AUDIO)<0)
 		error("Can`t initialize SDL !");
 	if (TTF_Init() < 0)
 		error("Can`t initialize SDL_TTF !");
@@ -473,7 +475,7 @@ void init_game()
 	singleplayer.text = "singleplayer";
 	multiplayer.text = "multiplayer";
 	option1.text = "option 1";
-	option2.text = "option 2";
+	option2.text = "sound";
 	_font_type1 = "Capture_it.ttf";
 	_font_type2 = "Capture_it_2.ttf";
 	difficulty.text = "difficulty";
@@ -497,13 +499,28 @@ void init_game()
 	SDL_SetRenderDrawColor(_render_target, 255, 255, 255, 255);
 	_field.width = (int)(0.9 * _min_window_width);
 	_field.height = (int)(0.7 * _min_window_height);
+
+
+	bounce_sound_buffer.loadFromFile("bounce.wav");
+	bounce_sound.setBuffer(bounce_sound_buffer);
+	bounce_sound.setVolume(100);
+	lost_sound_buffer.loadFromFile("lost.wav");
+	lost_sound.setBuffer(lost_sound_buffer);
+	lost_sound.setVolume(100);
+	click_sound_buffer.loadFromFile("click.wav");
+	click_sound.setBuffer(click_sound_buffer);
+	click_sound.setVolume(100);
+	music.openFromFile("game_music.ogg");
+	music.setLoop(true);
+	music.setVolume(20);
+	music.play();
 }
 
 
 void game_loop()
 {
-	//game_intro();
-	_game_state = game_state::PLAY_MENU;
+	game_intro();
+	//_game_state = game_state::PLAY_MENU;
 	while (_game_state != game_state::EXIT)
 	{
 		switch (_game_state)
@@ -742,6 +759,7 @@ void game_intro()
 				if (is_in_rect(input.motion.x, input.motion.y, start.rect))
 				{
 					_game_state = game_state::MENU;
+					click_sound.play();
 					SDL_Delay(70);
 				}
 				break;
@@ -773,7 +791,6 @@ void game_menu()
 				_game_state = game_state::EXIT;
 				break;
 			case SDL_MOUSEMOTION: // hovering
-				std::cout << input.motion.x << "   " << input.motion.y << std::endl;
 				hover_effect(play, input, logo.rect, 3, 1, draw_game_menu);
 				hover_effect(options, input, logo.rect, 3, 2, draw_game_menu);
 				hover_effect(quit, input, logo.rect, 3, 3, draw_game_menu);
@@ -782,16 +799,19 @@ void game_menu()
 				if (is_in_rect(input.motion.x, input.motion.y, play.rect))
 				{
 					_game_state = game_state::PLAY_MENU;
+					click_sound.play();
 					SDL_Delay(70);
 				}
 				if (is_in_rect(input.motion.x, input.motion.y, options.rect))
 				{
 					_game_state = game_state::OPTIONS_MENU;
+					click_sound.play();
 					SDL_Delay(70);
 				}
 				if (is_in_rect(input.motion.x, input.motion.y, quit.rect))
 				{
 					_game_state = game_state::EXIT;
+					click_sound.play();
 					SDL_Delay(70);
 				}
 				break;
@@ -820,9 +840,9 @@ void game_menu()
 void game_play_menu()
 {
 	update_object_and_position(play, title_size, _font_type1, _primary_color, position_of_object::TOP, null_rect, 0, 0);
-	update_object_and_position(singleplayer, button_size, _font_type1, _primary_color, position_of_object::MIDDLE, play.rect, 4, 1);
-	update_object_and_position(multiplayer, button_size, _font_type1, _primary_color, position_of_object::MIDDLE, play.rect, 4, 2);
-	update_object_and_position(instructions, button_size, _font_type1, _primary_color, position_of_object::MIDDLE, play.rect, 4, 3);
+	update_object_and_position(singleplayer, 5, _font_type1, _primary_color, position_of_object::MIDDLE, play.rect, 4, 1);
+	update_object_and_position(multiplayer, 5, _font_type1, _primary_color, position_of_object::MIDDLE, play.rect, 4, 2);
+	update_object_and_position(instructions, 5, _font_type1, _primary_color, position_of_object::MIDDLE, play.rect, 4, 3);
 	update_object_and_position(back, button_size, _font_type1, _primary_color, position_of_object::MIDDLE, play.rect, 4, 4);
 	draw_play_menu();
 
@@ -841,7 +861,6 @@ void game_play_menu()
 				_game_state = game_state::EXIT;
 				break;
 			case SDL_MOUSEMOTION: // hovering
-				std::cout << input.motion.x << " play_menu " << input.motion.y << std::endl;
 				hover_effect(singleplayer, input, play.rect, 4, 1, draw_play_menu);
 				hover_effect(multiplayer, input, play.rect, 4, 2, draw_play_menu);
 				hover_effect(instructions, input, play.rect, 4, 3, draw_play_menu);
@@ -851,21 +870,25 @@ void game_play_menu()
 				if (is_in_rect(input.motion.x, input.motion.y, singleplayer.rect))
 				{
 					_game_state = game_state::DIFFICULTY_MENU;
+					click_sound.play();
 					SDL_Delay(70);
 				}
 				if (is_in_rect(input.motion.x, input.motion.y, multiplayer.rect))
 				{
 					_game_state = game_state::MULTIPLAYER;
+					click_sound.play();
 					SDL_Delay(70);
 				}
 				if (is_in_rect(input.motion.x, input.motion.y, instructions.rect))
 				{
 					_game_state = game_state::INSTRUCTIONS;
+					click_sound.play();
 					SDL_Delay(70);
 				}
 				if (is_in_rect(input.motion.x, input.motion.y, back.rect))
 				{
 					_game_state = game_state::MENU;
+					click_sound.play();
 					SDL_Delay(70);
 				}
 				break;
@@ -877,9 +900,9 @@ void game_play_menu()
 						if (_window_width < _min_window_width) SDL_SetWindowSize(_window, _min_window_width, _window_height);
 						if (_window_height < _min_window_height) SDL_SetWindowSize(_window, _window_width, _min_window_height);
 						update_object_and_position(play, title_size, _font_type1, _primary_color, position_of_object::TOP, null_rect, 0, 0);
-						update_object_and_position(singleplayer, button_size, _font_type1, _primary_color, position_of_object::MIDDLE, play.rect, 4, 1);
-						update_object_and_position(multiplayer, button_size, _font_type1, _primary_color, position_of_object::MIDDLE, play.rect, 4, 2);
-						update_object_and_position(instructions, button_size, _font_type1, _primary_color, position_of_object::MIDDLE, play.rect, 4, 3);
+						update_object_and_position(singleplayer, 5, _font_type1, _primary_color, position_of_object::MIDDLE, play.rect, 4, 1);
+						update_object_and_position(multiplayer, 5, _font_type1, _primary_color, position_of_object::MIDDLE, play.rect, 4, 2);
+						update_object_and_position(instructions, 5, _font_type1, _primary_color, position_of_object::MIDDLE, play.rect, 4, 3);
 						update_object_and_position(back, button_size, _font_type1, _primary_color, position_of_object::MIDDLE, play.rect, 4, 4);
 					}
 				break;
@@ -917,7 +940,6 @@ void game_difficulty_menu()
 				_game_state = game_state::EXIT;
 				break;
 			case SDL_MOUSEMOTION: // hovering
-				std::cout << input.motion.x << " difficulty_menu " << input.motion.y << std::endl;
 				hover_effect(easy, input, difficulty.rect, 4, 1, draw_difficulty_menu);
 				hover_effect(medium, input, difficulty.rect, 4, 2, draw_difficulty_menu);
 				hover_effect(hard, input, difficulty.rect, 4, 3, draw_difficulty_menu);
@@ -928,6 +950,7 @@ void game_difficulty_menu()
 				{
 					_game_state = game_state::SINGLEPLAYER;
 					_game_difficulty = game_difficulty::EASY;
+					click_sound.play();
 					difficulty_level = 6;
 					_ball.set_reset_speed(0.4);
 					SDL_Delay(70);
@@ -936,6 +959,7 @@ void game_difficulty_menu()
 				{
 					_game_state = game_state::SINGLEPLAYER;
 					_game_difficulty = game_difficulty::MEDIUM;
+					click_sound.play();
 					difficulty_level = 8;
 					_ball.set_reset_speed(0.5);
 					SDL_Delay(70);
@@ -944,6 +968,7 @@ void game_difficulty_menu()
 				{
 					_game_state = game_state::SINGLEPLAYER;
 					_game_difficulty = game_difficulty::HARD;
+					click_sound.play();
 					difficulty_level = 10;
 					_ball.set_reset_speed(0.6);
 					SDL_Delay(70);
@@ -951,6 +976,7 @@ void game_difficulty_menu()
 				if (is_in_rect(input.motion.x, input.motion.y, back.rect))
 				{
 					_game_state = game_state::PLAY_MENU;
+					click_sound.play();
 					SDL_Delay(70);
 				}
 				break;
@@ -1007,6 +1033,7 @@ void game_instructions()
 				if (is_in_rect(input.motion.x, input.motion.y, back.rect))
 				{
 					_game_state = game_state::PLAY_MENU;
+					click_sound.play();
 					SDL_Delay(70);
 				}
 				break;
@@ -1048,6 +1075,7 @@ void game_playing()
 		_input.update();
 		event = _input.get_event();
 		_time.update();
+		click_sound.setVolume(100);
 		while (_time.accumulated_time >= _time.step_time)
 		{
 			_input.update();
@@ -1069,13 +1097,17 @@ void game_playing()
 				_ball.y += _ball.y_speed;
 				double proggressive_speed = 0.02;
 				if ((int)_ball.y - _ball.radius == _field.y || (int)_ball.y + _ball.radius == _field.y + _field.height) //wall collision
+				{
 					_ball.y_speed = -_ball.y_speed;
+					bounce_sound.play();
+				}
 				if (!is_in_rect((int)_ball.x, (int)_ball.y, _field.rect))
 				{
 					_play_state = play_state::FINISHED;
 					if (_ball.x > _field.x + _field.height / 2) player1_score++;
 					else player2_score++;
 					update_score();
+					lost_sound.play();
 				}
 				if (collided_with_paddle1())
 				{
@@ -1085,6 +1117,7 @@ void game_playing()
 					_ball.x_speed = _ball.speed * cos(bounce_angle);
 					_ball.y_speed = _ball.speed * -sin(bounce_angle);
 					_ball.speed += proggressive_speed;
+					bounce_sound.play();
 				}
 				if (collided_with_paddle2())
 				{
@@ -1094,6 +1127,7 @@ void game_playing()
 					_ball.x_speed = _ball.speed * cos(bounce_angle);
 					_ball.y_speed = _ball.speed * -sin(bounce_angle);
 					_ball.speed += proggressive_speed;
+					bounce_sound.play();
 				}
 				if (_game_state == game_state::SINGLEPLAYER)
 				{
@@ -1185,14 +1219,30 @@ void game_playing()
 			{
 				_play_state = play_state::FINISHED;
 				_game_state = game_state::MENU;
+				click_sound.play();
 			}
-			if (_input.is_key_tapped(SDL_SCANCODE_P))
-				_play_state = play_state::PAUSED;
+			if (_play_state == play_state::PLAYING)
+			{
+				if (_input.is_key_tapped(SDL_SCANCODE_P))
+				{
+					_play_state = play_state::PAUSED;
+					click_sound.play();
+					click_sound.setVolume(0);
+				}
+			}
 			if (_play_state == play_state::PAUSED)
 				if (_input.is_key_tapped(SDL_SCANCODE_SPACE))
+				{
 					_play_state = play_state::PLAYING;
-			if (_input.is_key_tapped(SDL_SCANCODE_R))
-				reset_play_field();
+					click_sound.play();
+				}
+			if (_play_state == play_state::FINISHED)
+				if (_input.is_key_tapped(SDL_SCANCODE_R))
+				{
+					reset_play_field();
+					click_sound.play();
+					click_sound.setVolume(0);
+				}
 			_time.accumulated_time -= _time.step_time;
 		}
 		draw_playing();
@@ -1223,7 +1273,6 @@ void game_options_menu()
 				_game_state = game_state::EXIT;
 				break;
 			case SDL_MOUSEMOTION: // hovering
-				std::cout << input.motion.x << " options_menu " << input.motion.y << std::endl;
 				hover_effect(option1, input, options.rect, 3, 1, draw_options_menu);
 				hover_effect(option2, input, options.rect, 3, 2, draw_options_menu);
 				hover_effect(back, input, options.rect, 3, 3, draw_options_menu);
@@ -1232,16 +1281,19 @@ void game_options_menu()
 				if (is_in_rect(input.motion.x, input.motion.y, option1.rect))
 				{
 					_game_state = game_state::OPTION1;
+					click_sound.play();
 					SDL_Delay(70);
 				}
 				if (is_in_rect(input.motion.x, input.motion.y, option2.rect))
 				{
 					_game_state = game_state::OPTION2;
+					click_sound.play();
 					SDL_Delay(70);
 				}
 				if (is_in_rect(input.motion.x, input.motion.y, back.rect))
 				{
 					_game_state = game_state::MENU;
+					click_sound.play();
 					SDL_Delay(70);
 				}
 				break;
@@ -1266,7 +1318,7 @@ void game_options_menu()
 	}
 }
 
-
+#undef main
 int main(int argc,char*argv[])
 {
 	constructor();

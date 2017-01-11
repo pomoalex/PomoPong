@@ -15,7 +15,7 @@ public:
 	void update_rect();
 private:
 	int radius;
-	int reset_x;
-	int reset_y;
+	double reset_x;
+	double reset_y;
 };
 

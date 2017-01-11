@@ -57,6 +57,6 @@ void ball::set_reset_speed(double new_speed)
 
 void ball:: set_reset_position(double new_x, double new_y)
 {
-	reset_x = new_x;
-	reset_y = new_y;
+	reset_x = (int)new_x;
+	reset_y = (int)new_y;
 }

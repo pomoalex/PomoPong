@@ -19,8 +19,8 @@ paddle::~paddle()
 
 void paddle::draw(SDL_Renderer *&_render_target)
 {
-	rect.x = x;
-	rect.y = y;
+	rect.x = (int)x;
+	rect.y = (int)y;
 	rect.w = width;
 	rect.h = height;
 	SDL_RenderFillRect(_render_target, &rect);
@@ -48,8 +48,8 @@ void paddle::set_reset_speed(double new_speed)
 
 void paddle::update_rect()
 {
-	rect.x = x;
-	rect.y = y;
+	rect.x = (int)x;
+	rect.y = (int)y;
 	rect.w = width;
 	rect.h = height;
 }

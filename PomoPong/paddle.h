@@ -18,8 +18,8 @@ public:
 	void update_rect();
 	double speed;
 private:
-	int reset_x;
+	double reset_x;
 	double reset_speed;
-	int reset_y;
+	double reset_y;
 };
 

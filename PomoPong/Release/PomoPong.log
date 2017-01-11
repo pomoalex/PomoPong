@@ -1,0 +1,9 @@
+﻿  Source.cpp
+     Creating library C:\Users\alexa\Desktop\UAIC\IP\Proiect\PomoPong\Release\PomoPong.lib and object C:\Users\alexa\Desktop\UAIC\IP\Proiect\PomoPong\Release\PomoPong.exp
+  Generating code
+  0 of 369 functions ( 0.0%) were compiled, the rest were copied from previous compilation.
+    0 functions were new in current compilation
+    26 functions had inline decision re-evaluated but remain unchanged
+  Finished generating code
+  PomoPong.vcxproj -> C:\Users\alexa\Desktop\UAIC\IP\Proiect\PomoPong\Release\PomoPong.exe
+  PomoPong.vcxproj -> C:\Users\alexa\Desktop\UAIC\IP\Proiect\PomoPong\Release\PomoPong.pdb (Full PDB)

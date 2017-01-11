@@ -7,12 +7,19 @@
 #include"ball.h"
 #include"paddle.h"
 #include"field.h"
+#include<SFML\Audio.hpp>
+
+
+sf::SoundBuffer bounce_sound_buffer;
+sf::SoundBuffer lost_sound_buffer;
+sf::SoundBuffer click_sound_buffer;
+sf::Sound bounce_sound,lost_sound,click_sound;
+sf::Music music;
 
 enum class game_state { IN_GAME, MENU, PLAY_MENU, OPTIONS_MENU, SINGLEPLAYER, MULTIPLAYER, DIFFICULTY_MENU, OPTION1, OPTION2,INSTRUCTIONS, EXIT };
 enum class play_state { PLAYING, PAUSED ,FINISHED};
 enum class position_of_object { TOP, MIDDLE };
 enum class game_difficulty {EASY,MEDIUM,HARD};
-
 
 void play_game();
 void game_loop();
