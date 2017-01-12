@@ -6,7 +6,7 @@ paddle::paddle()
 {
 	x = 0;
 	y = 0;
-	width = 10;
+	width = 3;
 	height = 100;
 	reset_speed = 0.5;
 }

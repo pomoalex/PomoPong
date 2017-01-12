@@ -1,26 +1,47 @@
 #pragma once
+//Graphics andd audio libraries
 #include <SDL.h>
 #include<SDL_ttf.h>
-#include<functional>
+#include<SFML\Audio.hpp>
+//auxiliary libraries
 #include<string>
 #include<iostream>
+#include<functional>
+#include<Windows.h>
+#include<random>
+#include<math.h>
+#include<sstream>
+//classes
 #include"ball.h"
 #include"paddle.h"
 #include"field.h"
-#include<SFML\Audio.hpp>
+#include"input.h"
+#include "frequence_time.h"
+//game reference libraries
+#include"auxiliary_functions.h"
+#include"game_states.h"
 
-
+//SFML audio files
 sf::SoundBuffer bounce_sound_buffer;
 sf::SoundBuffer lost_sound_buffer;
 sf::SoundBuffer click_sound_buffer;
 sf::Sound bounce_sound,lost_sound,click_sound;
 sf::Music music;
 
-enum class game_state { IN_GAME, MENU, PLAY_MENU, OPTIONS_MENU, SINGLEPLAYER, MULTIPLAYER, DIFFICULTY_MENU, OPTION1, OPTION2,INSTRUCTIONS, EXIT };
-enum class play_state { PLAYING, PAUSED ,FINISHED};
-enum class position_of_object { TOP, MIDDLE };
-enum class game_difficulty {EASY,MEDIUM,HARD};
+//draw functions 
+void draw_texture(SDL_Texture *texture, SDL_Rect texture_rect);
+void draw_background();
+void draw_game_intro();
+void draw_game_menu();
+void draw_play_menu();
+void draw_difficulty_menu();
+void draw_playing();
+void draw_instructions();
+void draw_options_menu();
+void draw_gameplay_options_menu();
+void draw_sound_options_menu();
 
+//game main functions
 void play_game();
 void game_loop();
 void game_menu();
@@ -31,16 +52,10 @@ void game_difficulty_menu();
 void game_playing();
 void game_instructions();
 void game_options_menu();
-void draw_background();
-void draw_game_intro();
-void draw_game_menu();
-void draw_play_menu();
-void draw_difficulty_menu();
-void draw_playing();
-void draw_instructions();
-void draw_options_menu();
-int get_font_size(int height_percentage, std::string text);
-void draw_texture(SDL_Texture *texture, SDL_Rect texture_rect);
+void sound_options_menu();
+void gameplay_options_menu();
+
+//used objects
 struct object
 {
 	SDL_Texture *texture;
@@ -49,20 +64,33 @@ struct object
 	int size;
 	bool hovering;
 };
-object logo, brand, start, play, options, quit, back, singleplayer, multiplayer, option1, option2;
-object difficulty, easy, medium, hard , instructions , instruction1 , instruction2, instruction3, instruction4, instruction5, instruction6;
-object score1, score2;
+object logo, brand, start;
+object score1, score2,display_time;
+object _object[10];
+short number_of_used_objects;
+//in-game used functions
+void create_text_texture(SDL_Texture* &text_texture,std::string text_to_display, std::string type_of_font, int text_size, SDL_Color text_color);
+int get_font_size(int height_percentage, std::string text);
+void hover_effect(object &_object, SDL_Event input, SDL_Rect top_object_rect, int number_of_objects, int object_number, std::function<void()>draw_function);
+void update_object(object &_object, int height_percentage, std::string font_type, SDL_Color color);
+void update_object_and_position(object &_object, int height_percentage, std::string font_type, SDL_Color color, position_of_object position, SDL_Rect top_object_rect, int number_of_objects, int object_number);
+void update_middle_object_position(SDL_Rect top_object_rect, SDL_Rect &object_rect, int number_of_objects, int object_number);
+void update_top_object_position(SDL_Rect &rect);
+bool is_in_rect(int x, int y, SDL_Rect rect);
+bool touched_ball(SDL_Rect rect);
+bool collided_with_paddle1();
+bool collided_with_paddle2();
+void set_player_name();
+int rate(int difficulty);
+void draw_texture(SDL_Texture *texture, SDL_Rect texture_rect);
+
+//game global variables
 int player1_score, player2_score;
 std::string player1_name;
 std::string player2_name;
 paddle paddle1, paddle2;
 ball _ball;
 field _field;
-void hover_effect(object &_object, SDL_Event input, SDL_Rect top_object_rect, int number_of_objects, int object_number, std::function<void()>draw_function);
-void update_object(object &_object, int height_percentage, std::string font_type, SDL_Color color);
-void update_object_and_position(object &_object, int height_percentage, std::string font_type, SDL_Color color, position_of_object position, SDL_Rect top_object_rect, int number_of_objects, int object_number);
-void update_middle_object_position(SDL_Rect top_object_rect, SDL_Rect &object_rect, int number_of_objects, int object_number);
-void update_top_object_position(SDL_Rect &rect);
 int hover_animation_speed;
 int hover_animation_size;
 SDL_Window* _window;
@@ -74,16 +102,13 @@ int _window_width;
 int _window_height;
 int _min_window_height;
 int _min_window_width;
-game_state _game_state;
-play_state _play_state;
-game_difficulty _game_difficulty;
 int difficulty_level;
 TTF_Font *_font;
 SDL_Color _text_color;
 std::string _font_type1;
 std::string _font_type2;
-void create_text_texture(SDL_Texture* &text_texture,std::string text_to_display, std::string type_of_font, int text_size, SDL_Color text_color);
 Uint32 _windowID;
 SDL_Rect null_rect;
 int button_size;
 int title_size;
+int fps;

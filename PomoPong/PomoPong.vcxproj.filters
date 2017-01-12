@@ -53,6 +53,12 @@
     <ClInclude Include="field.h">
       <Filter>Header Files</Filter>
     </ClInclude>
+    <ClInclude Include="auxiliary_functions.h">
+      <Filter>Resource Files</Filter>
+    </ClInclude>
+    <ClInclude Include="game_states.h">
+      <Filter>Resource Files</Filter>
+    </ClInclude>
   </ItemGroup>
   <ItemGroup>
     <None Include="packages.config" />

@@ -125,9 +125,11 @@
     <ClCompile Include="Source.cpp" />
   </ItemGroup>
   <ItemGroup>
+    <ClInclude Include="auxiliary_functions.h" />
     <ClInclude Include="ball.h" />
     <ClInclude Include="field.h" />
     <ClInclude Include="frequence_time.h" />
+    <ClInclude Include="game_states.h" />
     <ClInclude Include="input.h" />
     <ClInclude Include="paddle.h" />
     <ClInclude Include="source.h" />

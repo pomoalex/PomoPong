@@ -22,7 +22,7 @@ ball::~ball()
 
 void ball::draw (SDL_Renderer *&_render_target)
 {
-	for (int line = (int)x - radius;line <= (int)x + (int)y; line++)
+	for (int line = (int)x - radius;line <= (int)x + radius; line++)
 		for (int column = (int)y - radius;column <= (int)y + radius;column++)
 			if ((line - (int)x) * (line - (int)x) + (column - (int)y) * (column - (int)y) <= radius * radius)
 				SDL_RenderDrawPoint(_render_target, line, column);
