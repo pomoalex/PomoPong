@@ -33,9 +33,6 @@
     <ClCompile Include="Source.cpp">
       <Filter>Source Files</Filter>
     </ClCompile>
-    <ClCompile Include="powerup.cpp">
-      <Filter>Source Files</Filter>
-    </ClCompile>
   </ItemGroup>
   <ItemGroup>
     <ClInclude Include="source.h">
@@ -61,9 +58,6 @@
     </ClInclude>
     <ClInclude Include="game_states.h">
       <Filter>Resource Files</Filter>
-    </ClInclude>
-    <ClInclude Include="powerup.h">
-      <Filter>Header Files</Filter>
     </ClInclude>
   </ItemGroup>
   <ItemGroup>

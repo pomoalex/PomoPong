@@ -10,6 +10,7 @@
 #include<Windows.h>
 #include<random>
 #include<math.h>
+#include <fstream>
 #include<sstream>
 //classes
 #include"ball.h"
@@ -17,7 +18,6 @@
 #include"field.h"
 #include"input.h"
 #include "frequence_time.h"
-#include"powerup.h"
 //game reference libraries
 #include"auxiliary_functions.h"
 #include"game_states.h"
@@ -48,6 +48,8 @@ void game_instructions();
 void game_options_menu();
 void sound_options_menu();
 void gameplay_options_menu();
+void game_mode_menu();
+void game_finish_menu();
 
 //used objects
 struct object
@@ -81,6 +83,7 @@ void draw_texture(SDL_Texture *texture, SDL_Rect texture_rect);
 
 //game global variables
 int player1_score, player2_score;
+bool player1_wins;
 std::string player1_name;
 std::string player2_name;
 paddle paddle1, paddle2;

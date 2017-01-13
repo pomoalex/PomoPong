@@ -1,6 +1,6 @@
 #pragma once
 
-enum class game_state { IN_GAME, MENU, PLAY_MENU, OPTIONS_MENU, SINGLEPLAYER, MULTIPLAYER, DIFFICULTY_MENU, GAMEPLAY_OPTIONS, SOUND_OPTIONS, INSTRUCTIONS, EXIT };
+enum class game_state { IN_GAME, MENU, PLAY_MENU, OPTIONS_MENU,PLAYING, DIFFICULTY_MENU,GAME_MODE,FINISHED, GAMEPLAY_OPTIONS, SOUND_OPTIONS, INSTRUCTIONS, EXIT };
 game_state _game_state;
 
 
@@ -27,5 +27,9 @@ enum class assist_state {ON,OFF};
 assist_state _assist_state;
 
 
-enum class powerups_state {ON,OFF};
-powerups_state _powerups_state;
+enum class play_mode {SINGLEPLAYER,MULTIPLAYER};
+play_mode _play_mode;
+
+
+enum class game_mode {TIME_ATTACK,CHAMPIONSHIP,ENDLESS};
+game_mode _game_mode;

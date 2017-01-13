@@ -1,6 +1,5 @@
 #include "source.h"
 
-
 bool is_in_rect(int x, int y, SDL_Rect rect)
 {
 	if (x < rect.x) return 0;
@@ -42,9 +41,9 @@ bool collided_with_paddle2()
 void set_player_name()
 {
 	player1_name = "player 1";
-	switch (_game_state)
+	switch (_play_mode)
 	{
-	case game_state::SINGLEPLAYER:
+	case play_mode::SINGLEPLAYER:
 		switch (_game_difficulty)
 		{
 		case game_difficulty::EASY:
@@ -58,7 +57,7 @@ void set_player_name()
 			break;
 		}
 		break;
-	case game_state::MULTIPLAYER:
+	case play_mode::MULTIPLAYER:
 		player2_name = "player 2";
 		break;
 	}
@@ -136,10 +135,6 @@ void draw_playing()
 	_field.draw(_render_target);
 	paddle1.draw(_render_target);
 	paddle2.draw(_render_target);
-	if (_powerups_state == powerups_state::ON)
-	{
-		
-	}
 	_ball.draw(_render_target);
 	SDL_RenderPresent(_render_target);
 }
@@ -236,7 +231,9 @@ void update_displayed_time()
 	{
 		std::stringstream auxiliary;
 		auxiliary.str("");
-		auxiliary << displayed_time_value;
+		if (_game_mode == game_mode::TIME_ATTACK)
+			auxiliary << 60 - displayed_time_value;
+			else auxiliary <<displayed_time_value;
 		displayed_time.size = get_font_size(4, auxiliary.str());
 		create_text_texture(displayed_time.texture, auxiliary.str(), _font_type1, displayed_time.size, _primary_color);
 		SDL_QueryTexture(displayed_time.texture, NULL, NULL, &displayed_time.rect.w, &displayed_time.rect.h);
@@ -402,12 +399,82 @@ void constructor() //class constructor
 	_window = nullptr;
 	_background_image = nullptr;
 	_render_target = nullptr;
-	_window_width = 1000;
-	_window_height = 750;
 	_min_window_height = _window_height;
 	_min_window_width = _window_width;
 	_game_state = game_state::IN_GAME;
 	SystemParametersInfo(SPI_SETKEYBOARDDELAY, 0, 0, 0);
+}
+
+
+void init_settings()
+{
+	std::ifstream f("settings.in");
+	bool auxiliary;
+	f >> auxiliary;
+	switch (auxiliary)
+	{
+	case true:
+		_assist_state = assist_state::ON;
+		break;
+	case false:
+		_assist_state = assist_state::OFF;
+		break;
+	}
+	f >> auxiliary;
+	switch (auxiliary)
+	{
+	case true:
+		_music_state = music_state::ON;
+		break;
+	case false:
+		_music_state = music_state::OFF;
+		break;
+	}
+	f >> auxiliary;
+	switch (auxiliary)
+	{
+	case true:
+		_effects_state = effects_state::ON;
+		break;
+	case false:
+		_effects_state = effects_state::OFF;
+		break;
+	}
+	f.close();
+}
+
+
+void update_settings_file()
+{
+	std::ofstream f("settings.in");
+	switch (_assist_state)
+	{
+	case assist_state::ON:
+		f << 1<<" ";
+		break;
+	case assist_state::OFF:
+		f << 0 << " ";
+		break;
+	}
+	switch (_music_state)
+	{
+	case music_state::ON:
+		f << 1 << " ";
+		break;
+	case music_state::OFF:
+		f << 0 << " ";
+		break;
+	}
+	switch (_effects_state)
+	{
+	case effects_state::ON:
+		f << 1 << " ";
+		break;
+	case effects_state::OFF:
+		f << 0 << " ";
+		break;
+	}
+	f.close();
 }
 
 
@@ -424,6 +491,7 @@ void destructor() //class destructor
 	SystemParametersInfo(SPI_SETKEYBOARDDELAY, 1, 0, 0);
 	TTF_Quit();
 	SDL_Quit();
+	update_settings_file();
 }
 
 
@@ -434,40 +502,8 @@ void play_game()
 }
 
 
-void init_game()
+void init_audio()
 {
-	if (SDL_Init(SDL_INIT_VIDEO | SDL_INIT_AUDIO)<0)
-		error("Can`t initialize SDL !");
-	if (TTF_Init() < 0)
-		error("Can`t initialize SDL_TTF !");
-	SDL_DisplayMode mode;
-	SDL_GetDesktopDisplayMode(0, &mode);
-	_window_height = _min_window_height = (int)(0.85 * mode.h);
-	_window_width = _min_window_width = (int)(_window_height * 1.4);
-	fps = mode.refresh_rate;
-	_window = SDL_CreateWindow("Pomo Pong", SDL_WINDOWPOS_CENTERED, SDL_WINDOWPOS_CENTERED, _window_width, _window_height, SDL_WINDOW_SHOWN | SDL_WINDOW_RESIZABLE);
-	if (_window == nullptr)
-		error("Cannot create window !");
-	_windowID = SDL_GetWindowID(_window);
-	_render_target = SDL_CreateRenderer(_window, -1, SDL_RENDERER_ACCELERATED);
-	_background_image = load_texture("background.bmp", _render_target);
-	logo.text = "pomo Pong";
-	start.text = "start";
-	_font_type1 = "Capture_it.ttf";
-	_font_type2 = "Capture_it_2.ttf";
-	_assist_state = assist_state::OFF;
-	_primary_color = { 0,255,0,0 };
-	_secondary_color = { 200 ,0,255,0 };
-	hover_animation_speed = 6;
-	hover_animation_size = 20;
-	null_rect.x = null_rect.y = null_rect.w = null_rect.h = 0;
-	button_size = 7;
-	title_size = 15;
-	SDL_SetRenderDrawColor(_render_target, 255, 255, 255, 255);
-	_field.width = (int)(0.9 * _min_window_width);
-	_field.height = (int)(0.7 * _min_window_height);
-
-
 	bounce_sound_buffer.loadFromFile("bounce.wav");
 	bounce_sound.setBuffer(bounce_sound_buffer);
 	bounce_sound.setVolume(100);
@@ -480,14 +516,63 @@ void init_game()
 	music.openFromFile("game_music.ogg");
 	music.setLoop(true);
 	music.setVolume(20);
-	music.play();
+	if (_music_state == music_state::ON)
+		music.play();
+}
+
+
+void init_window()
+{
+	SDL_DisplayMode mode;
+	SDL_GetDesktopDisplayMode(0, &mode);
+	_window_height = _min_window_height = (int)(0.85 * mode.h);
+	_window_width = _min_window_width = (int)(_window_height * 1.4);
+	fps = mode.refresh_rate;
+	_window = SDL_CreateWindow("Pomo Pong", SDL_WINDOWPOS_CENTERED, SDL_WINDOWPOS_CENTERED, _window_width, _window_height, SDL_WINDOW_SHOWN | SDL_WINDOW_RESIZABLE);
+	if (_window == nullptr)
+		error("Cannot create window !");
+	_windowID = SDL_GetWindowID(_window);
+	_render_target = SDL_CreateRenderer(_window, -1, SDL_RENDERER_ACCELERATED);
+}
+
+
+void init_variables()
+{
+	_background_image = load_texture("background.bmp", _render_target);
+	logo.text = "pomo Pong";
+	start.text = "start";
+	_font_type1 = "Capture_it.ttf";
+	_font_type2 = "Capture_it_2.ttf";
+	_primary_color = { 0,255,0,0 };
+	_secondary_color = { 200 ,0,255,0 };
+	hover_animation_speed = 6;
+	hover_animation_size = 20;
+	null_rect.x = null_rect.y = null_rect.w = null_rect.h = 0;
+	button_size = 7;
+	title_size = 15;
+	SDL_SetRenderDrawColor(_render_target, 255, 255, 255, 255);
+	_field.width = (int)(0.9 * _min_window_width);
+	_field.height = (int)(0.7 * _min_window_height);
+}
+
+
+void init_game()
+{
+	if (SDL_Init(SDL_INIT_VIDEO | SDL_INIT_AUDIO)<0)
+		error("Can`t initialize SDL !");
+	if (TTF_Init() < 0)
+		error("Can`t initialize SDL_TTF !");
+	init_window();
+	init_variables();
+	init_settings();
+	init_audio();
 }
 
 
 void game_loop()
 {
-	//game_intro();
-	_game_state = game_state::MENU;
+	game_intro();
+	//_game_state = game_state::MENU;
 	while (_game_state != game_state::EXIT)
 	{
 		switch (_game_state)
@@ -504,12 +589,6 @@ void game_loop()
 		case game_state::DIFFICULTY_MENU:
 			game_difficulty_menu();
 			break;
-		case game_state::MULTIPLAYER:
-			game_playing();
-			break;
-		case game_state::SINGLEPLAYER:
-			game_playing();
-			break;
 		case game_state::INSTRUCTIONS:
 			game_instructions();
 			break;
@@ -518,6 +597,15 @@ void game_loop()
 			break;
 		case game_state::GAMEPLAY_OPTIONS:
 			gameplay_options_menu();
+			break;
+		case game_state::GAME_MODE:
+			game_mode_menu();
+			break;
+		case game_state::PLAYING:
+			game_playing();
+			break;
+		case game_state::FINISHED:
+			game_finish_menu();
 			break;
 		}
 	}
@@ -836,12 +924,14 @@ void game_play_menu()
 					if (is_in_rect(_input.x, _input.y, _object[1].rect))
 					{
 						_game_state = game_state::DIFFICULTY_MENU;
+						_play_mode = play_mode::SINGLEPLAYER;
 						if (_effects_state == effects_state::ON) click_sound.play();
 						SDL_Delay(70);
 					}
 					if (is_in_rect(_input.x, _input.y, _object[2].rect))
 					{
-						_game_state = game_state::MULTIPLAYER;
+						_game_state = game_state::GAME_MODE;
+						_play_mode = play_mode::MULTIPLAYER;
 						if (_effects_state == effects_state::ON) click_sound.play();
 						SDL_Delay(70);
 					}
@@ -905,7 +995,7 @@ void game_difficulty_menu()
 				{
 					if (is_in_rect(_input.x, _input.y, _object[1].rect))
 					{
-						_game_state = game_state::SINGLEPLAYER;
+						_game_state = game_state::GAME_MODE;
 						_game_difficulty = game_difficulty::EASY;
 						if (_effects_state == effects_state::ON) click_sound.play();
 						difficulty_level = 6;
@@ -914,7 +1004,7 @@ void game_difficulty_menu()
 					}
 					if (is_in_rect(_input.x, _input.y, _object[2].rect))
 					{
-						_game_state = game_state::SINGLEPLAYER;
+						_game_state = game_state::GAME_MODE;
 						_game_difficulty = game_difficulty::MEDIUM;
 						if (_effects_state == effects_state::ON) click_sound.play();
 						difficulty_level = 9;
@@ -923,7 +1013,7 @@ void game_difficulty_menu()
 					}
 					if (is_in_rect(_input.x, _input.y, _object[3].rect))
 					{
-						_game_state = game_state::SINGLEPLAYER;
+						_game_state = game_state::GAME_MODE;
 						_game_difficulty = game_difficulty::HARD;
 						if (_effects_state == effects_state::ON) click_sound.play();
 						difficulty_level = 12;
@@ -955,6 +1045,78 @@ void game_difficulty_menu()
 		draw_used_objects();
 	}
 	number_of_used_objects = 0;
+}
+
+
+void game_mode_menu()
+{
+	_object[0].text = "mode";
+	_object[1].text = "endless";
+	_object[2].text = "championship";
+	_object[3].text = "time attack";
+	_object[4].text = "back";
+	number_of_used_objects = 5;
+	update_used_objects(title_size, button_size);
+	draw_used_objects();
+	while (_game_state == game_state::GAME_MODE)
+	{
+		_input.update();
+		used_objects_hover_effect(_input.x, _input.y);
+		if (!_input.empty_event)
+		{
+			switch (_input.event.type)
+			{
+			case SDL_QUIT:
+				_game_state = game_state::EXIT;
+				break;
+			case SDL_MOUSEBUTTONUP: // pressing button
+				if (_input.was_mouse_button_pressed(1))
+				{
+					if (is_in_rect(_input.x, _input.y, _object[1].rect))
+					{
+						if (_effects_state == effects_state::ON) click_sound.play();
+						_game_mode = game_mode::ENDLESS;
+						_game_state = game_state::PLAYING;
+						SDL_Delay(70);
+					}
+					if (is_in_rect(_input.x, _input.y, _object[2].rect))
+					{
+						if (_effects_state == effects_state::ON) click_sound.play();
+						_game_mode = game_mode::CHAMPIONSHIP;
+						_game_state = game_state::PLAYING;
+						SDL_Delay(70);
+					}
+					if (is_in_rect(_input.x, _input.y, _object[3].rect))
+					{
+						if (_effects_state == effects_state::ON) click_sound.play();
+						_game_mode = game_mode::TIME_ATTACK;
+						_game_state = game_state::PLAYING;
+						SDL_Delay(70);
+					}
+					if (is_in_rect(_input.x, _input.y, _object[4].rect))
+					{
+						_game_state = game_state::DIFFICULTY_MENU;
+						if (_effects_state == effects_state::ON) click_sound.play();
+						SDL_Delay(70);
+					}
+				}
+				break;
+			case SDL_WINDOWEVENT: // resize 
+				if (_input.event.window.windowID == _windowID)
+					if (_input.event.window.event == SDL_WINDOWEVENT_SIZE_CHANGED)
+					{
+						SDL_GetWindowSize(_window, &_window_width, &_window_height);
+						if (_window_width < _min_window_width) SDL_SetWindowSize(_window, _min_window_width, _window_height);
+						if (_window_height < _min_window_height) SDL_SetWindowSize(_window, _window_width, _min_window_height);
+						update_used_objects(title_size, button_size);
+					}
+				break;
+			default:
+				break;
+			}
+		}
+		draw_used_objects();
+	}
 }
 
 
@@ -1014,10 +1176,69 @@ void game_instructions()
 }
 
 
+void game_exit_menu()
+{
+	_object[0].text = "pomo pong ";
+	_object[1].text = "do you want to ";
+	_object[2].text = "exit ?";
+	_object[3].text = "continue";
+	_object[4].text = "back to menu";
+	number_of_used_objects = 5;
+	update_used_objects(title_size, button_size);
+	draw_used_objects();
+	bool choose = false;
+	while (!choose)
+	{
+		_input.update();
+		hover_effect(_object[3], _input.x, _input.y, _object[0].rect, number_of_used_objects - 1, 3, draw_used_objects);
+		hover_effect(_object[4], _input.x, _input.y, _object[0].rect, number_of_used_objects - 1, 4, draw_used_objects);
+		if (!_input.empty_event)
+		{
+			switch (_input.event.type)
+			{
+			case SDL_QUIT:
+				_game_state = game_state::EXIT;
+				choose = true;
+				break;
+			case SDL_MOUSEBUTTONUP: // pressing button
+				if (_input.was_mouse_button_pressed(1))
+				{
+					if (is_in_rect(_input.x, _input.y, _object[4].rect))
+					{
+						if (_effects_state == effects_state::ON) click_sound.play();
+						_game_state = game_state::MENU;
+						choose = true;
+						SDL_Delay(70);
+					}
+					if (is_in_rect(_input.x, _input.y, _object[3].rect))
+					{
+						choose = true;
+						if (_effects_state == effects_state::ON) click_sound.play();
+						SDL_Delay(70);
+					}
+				}
+				break;
+			case SDL_WINDOWEVENT: // resize 
+				if (_input.event.window.windowID == _windowID)
+					if (_input.event.window.event == SDL_WINDOWEVENT_SIZE_CHANGED)
+					{
+						SDL_GetWindowSize(_window, &_window_width, &_window_height);
+						if (_window_width < _min_window_width) SDL_SetWindowSize(_window, _min_window_width, _window_height);
+						if (_window_height < _min_window_height) SDL_SetWindowSize(_window, _window_width, _min_window_height);
+						update_used_objects(title_size, button_size);
+					}
+				break;
+			default:
+				break;
+			}
+		}
+		draw_used_objects();
+	}
+}
+
+
 void game_playing()
 {
-	_powerups_state = powerups_state::ON;
-
 	set_player_name();
 	reset_play_field();
 	frequence_time _time;
@@ -1029,13 +1250,15 @@ void game_playing()
 	bool first_match = true;
 	bool player1_lost;
 	update_displayed_time();
-	while (_game_state == game_state::SINGLEPLAYER || _game_state == game_state::MULTIPLAYER)
+	while (_game_state == game_state::PLAYING)
 	{
 		_input.update();
 		_time.update();
 		click_sound.setVolume(100);
+		int aux = 0;
 		while (_time.accumulated_time >= _time.step_time)
 		{
+			aux++;
 			_input.update();
 			switch (_input.event.type)
 			{
@@ -1072,19 +1295,13 @@ void game_playing()
 						click_sound.setVolume(0);
 						first_match = true;
 					}
-					if (_input.is_key_tapped(SDL_SCANCODE_ESCAPE))
-					{
-						_play_state = play_state::FINISHED;
-						_game_state = game_state::MENU;
-						if (_effects_state == effects_state::ON) click_sound.play();
-					}
 					if (_input.is_key_tapped(SDL_SCANCODE_SPACE))
 					{
 						_play_state = play_state::PLAYING;
-						time_on_pause = SDL_GetTicks() - start_pause_time;
-						total_time_on_pause += time_on_pause;
+						
 						if (first_match)
 						{
+							start_match_time = SDL_GetTicks();
 							first_match = false;
 							_ball.x_speed = _ball.speed * get_random_sign();
 						}
@@ -1095,6 +1312,14 @@ void game_playing()
 					}
 				}
 			}
+			if (_input.is_key_tapped(SDL_SCANCODE_ESCAPE))
+					{
+						_play_state = play_state::PAUSED;
+						game_exit_menu();
+						if (_game_state == game_state::MENU)
+							_play_state = play_state::FINISHED;
+						if (_effects_state == effects_state::ON) click_sound.play();
+					}
 			if (_play_state == play_state::PLAYING)
 			{
 				_ball.x += _ball.x_speed;
@@ -1142,7 +1367,7 @@ void game_playing()
 					_ball.speed += proggressive_speed;
 					if (_effects_state == effects_state::ON) bounce_sound.play();
 				}
-				if (_game_state == game_state::SINGLEPLAYER)
+				if (_play_mode == play_mode::SINGLEPLAYER)
 				{
 					if (_assist_state == assist_state::ON)
 					{
@@ -1200,7 +1425,7 @@ void game_playing()
 						paddle1.y = _field.y + _field.height - paddle1.height;
 					else paddle1.y += paddle1.speed;
 				}
-				if (_game_state == game_state::MULTIPLAYER)
+				if (_play_mode == play_mode::MULTIPLAYER)
 				{
 					if (_input.is_key_tapped(SDL_SCANCODE_UP))
 					{
@@ -1220,6 +1445,7 @@ void game_playing()
 				if (_input.is_key_tapped(SDL_SCANCODE_SPACE))
 				{
 					_play_state = play_state::PLAYING;
+					time_on_pause = SDL_GetTicks() - start_pause_time;
 					total_time_on_pause += time_on_pause;
 					time_on_pause = 0;
 					update_displayed_time();
@@ -1228,15 +1454,100 @@ void game_playing()
 			if (fps)
 				if ((1000 / fps) > SDL_GetTicks() - _time.current_time)
 				{
-					SDL_Delay((1000 / fps) - SDL_GetTicks() + _time.current_time);
+					int delay = (1000 / fps) - SDL_GetTicks() + _time.current_time - 16;
+					if (delay > 0) SDL_Delay(delay);
 				}
 			_time.accumulated_time -= _time.step_time;
 		}
-		if (_play_state == play_state::PLAYING)
-			update_displayed_time();
-		draw_playing();
+		if (_play_state != play_state::PAUSED)
+			if (!first_match) update_displayed_time();
+		if (_game_state == game_state::PLAYING) draw_playing();
+		switch (_game_mode)
+		{
+		case game_mode::CHAMPIONSHIP:
+			if (player1_score == 10 || player2_score == 10)
+			{
+				_game_state = game_state::FINISHED;
+				if (_ball.x > (_field.x + _field.width) / 2)
+					player1_wins = true;
+				else player1_wins = false;
+				SDL_Delay(70);
+			}
+			break;
+		case game_mode::TIME_ATTACK:
+			if (displayed_time_value == 60)
+			{
+				_game_state = game_state::FINISHED;
+				if (player1_score > player2_score)
+					player1_wins = true;
+				else player1_wins = false;
+				SDL_Delay(70);
+			}
+			break;
+		}
 	}
 
+}
+
+
+void game_finish_menu()
+{
+	_object[0].text = "pomo pong";
+	if (player1_wins)
+		_object[1].text = player1_name + " won";
+	else if (_play_mode == play_mode::MULTIPLAYER)
+		_object[1].text = player2_name + " won";
+	else _object[1].text = player1_name + " lost";
+	_object[2].text = "play again";
+	_object[3].text = "back to menu";
+	number_of_used_objects = 4;
+	update_used_objects(title_size, button_size);
+	draw_used_objects();
+	while (_game_state == game_state::FINISHED)
+	{
+		_input.update();
+		hover_effect(_object[2], _input.x, _input.y, _object[0].rect, number_of_used_objects - 1, 2, draw_used_objects);
+		hover_effect(_object[3], _input.x, _input.y, _object[0].rect, number_of_used_objects - 1, 3, draw_used_objects);
+		if (!_input.empty_event)
+		{
+			switch (_input.event.type)
+			{
+			case SDL_QUIT:
+				_game_state = game_state::EXIT;
+				break;
+			case SDL_MOUSEBUTTONUP: // pressing button
+				if (_input.was_mouse_button_pressed(1))
+				{
+					if (is_in_rect(_input.x, _input.y, _object[2].rect))
+					{
+						_game_state = game_state::PLAYING;
+						if (_effects_state == effects_state::ON) click_sound.play();
+						SDL_Delay(70);
+					}
+					if (is_in_rect(_input.x, _input.y, _object[3].rect))
+					{
+						_game_state = game_state::MENU;
+						if (_effects_state == effects_state::ON) click_sound.play();
+						SDL_Delay(70);
+					}
+				}
+			case SDL_WINDOWEVENT: // resize 
+				if (_input.event.window.windowID == _windowID)
+					if (_input.event.window.event == SDL_WINDOWEVENT_SIZE_CHANGED)
+					{
+						SDL_GetWindowSize(_window, &_window_width, &_window_height);
+						if (_window_width < _min_window_width) SDL_SetWindowSize(_window, _min_window_width, _window_height);
+						if (_window_height < _min_window_height) SDL_SetWindowSize(_window, _window_width, _min_window_height);
+						update_used_objects(title_size, button_size);
+					}
+				break;
+			default:
+				break;
+			}
+		}
+		draw_used_objects();
+	}
+	number_of_used_objects = 0;
 }
 
 
@@ -1306,8 +1617,24 @@ void game_options_menu()
 void sound_options_menu()
 {
 	_object[0].text = "sound";
-	_object[1].text = "music on";
-	_object[2].text = "sound effects on";
+	switch (_music_state)
+	{
+	case music_state::ON:
+		_object[1].text = "music on";
+		break;
+	case music_state::OFF:
+		_object[1].text = "music off";
+		break;
+	}
+	switch (_effects_state)
+	{
+	case effects_state::ON:
+		_object[2].text = "sound effects on";
+		break;
+	case effects_state::OFF:
+		_object[2].text = "sound effects off";
+		break;
+	}
 	_object[3].text = "back";
 	number_of_used_objects = 4;
 	update_used_objects(title_size, button_size);
@@ -1395,7 +1722,15 @@ void sound_options_menu()
 void gameplay_options_menu()
 {
 	_object[0].text = "gameplay";
-	_object[1].text = "assist off";
+	switch (_assist_state)
+	{
+	case assist_state::ON:
+		_object[1].text = "assist on";
+		break;
+	case assist_state::OFF:
+		_object[1].text = "assist off";
+		break;
+	}
 	_object[2].text = "back";
 	number_of_used_objects = 3;
 	update_used_objects(title_size, button_size);
