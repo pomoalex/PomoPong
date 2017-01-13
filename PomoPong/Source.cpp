@@ -302,16 +302,14 @@ void resize_play_field()
 {
 	double x_ball_to_field = _ball.x - _field.x;
 	double y_ball_to_field = _ball.y - _field.y;
-	double x_paddle1_to_field = paddle1.x - _field.x;
 	double y_paddle1_to_field = paddle1.y - _field.y;
-	double x_paddle2_to_field = paddle2.x - _field.x;
 	double y_paddle2_to_field = paddle2.y - _field.y;
 	reset_field();
 	_ball.x = _field.x + x_ball_to_field;
 	_ball.y = _field.y + y_ball_to_field;
-	paddle1.x = _field.x + x_paddle1_to_field;
+	reset_paddle1();
+	reset_paddle2();
 	paddle1.y = _field.y + y_paddle1_to_field;
-	paddle2.x = _field.x + x_paddle2_to_field;
 	paddle2.y = _field.y + y_paddle2_to_field;
 }
 
@@ -1285,7 +1283,16 @@ void game_playing()
 						if (_window_height < _min_window_height) SDL_SetWindowSize(_window, _window_width, _min_window_height);
 						update_object_and_position(logo, button_size, _font_type1, _primary_color, position_of_object::TOP, null_rect, 0, 0);
 						update_score();
-						update_displayed_time();
+						std::stringstream auxiliary;
+						auxiliary.str("");
+						if (_game_mode == game_mode::TIME_ATTACK)
+							auxiliary << 60 - displayed_time_value;
+						else auxiliary << displayed_time_value;
+						displayed_time.size = get_font_size(4, auxiliary.str());
+						create_text_texture(displayed_time.texture, auxiliary.str(), _font_type1, displayed_time.size, _primary_color);
+						SDL_QueryTexture(displayed_time.texture, NULL, NULL, &displayed_time.rect.w, &displayed_time.rect.h);
+						displayed_time.rect.x = (_window_width - displayed_time.rect.w) / 2;
+						displayed_time.rect.y = logo.rect.y + logo.rect.h + (int)(0.01 * _window_height);
 						resize_play_field();
 					}
 				break;
@@ -1491,9 +1498,15 @@ void game_playing()
 			if (displayed_time_value == 60)
 			{
 				_game_state = game_state::FINISHED;
-				if (player1_score > player2_score)
-					player1_wins = true;
-				else player1_wins = false;
+				if (player1_score == player2_score)
+					even_scores = true;
+				else
+				{
+					if (player1_score > player2_score)
+						player1_wins = true;
+					else player1_wins = false;
+					even_scores = false;
+				}
 				SDL_Delay(70);
 			}
 			break;
@@ -1506,7 +1519,9 @@ void game_playing()
 void game_finish_menu()
 {
 	_object[0].text = "pomo pong";
-	if (player1_wins)
+	if (even_scores)
+		_object[1].text = "draw won";
+	else if (player1_wins)
 		_object[1].text = player1_name + " won";
 	else if (_play_mode == play_mode::MULTIPLAYER)
 		_object[1].text = player2_name + " won";

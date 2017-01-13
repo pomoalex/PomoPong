@@ -112,3 +112,4 @@ int title_size;
 int fps;
 input _input;
 SDL_Event _event;
+bool even_scores;
