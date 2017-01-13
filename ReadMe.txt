@@ -14,5 +14,5 @@ Run PomoPong.exe (PomoPong/Release/PomoPong.exe) in the same folder with :
 - click.wav
 - game_music.ogg
 - lost.wav
-
+- settings.in
 
