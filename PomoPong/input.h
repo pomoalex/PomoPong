@@ -8,13 +8,13 @@ public:
 	~input();
 	void update();
 	bool is_key_tapped(SDL_Scancode key);
-	bool is_mouse_button_down(int button_number);
-	SDL_Event get_event();
+	bool was_mouse_button_pressed(int button_number);
+	int x, y;
+	SDL_Event event;
+	bool empty_event;
 private:
 	const Uint8 *keys;
 	bool mouse[3];
-	int x, y;
-	SDL_Event event;
 	void get_mouse_buttons_state();
 };
 

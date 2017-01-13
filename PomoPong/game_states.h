@@ -25,3 +25,7 @@ effects_state _effects_state;
 
 enum class assist_state {ON,OFF};
 assist_state _assist_state;
+
+
+enum class powerups_state {ON,OFF};
+powerups_state _powerups_state;

@@ -17,6 +17,7 @@
 #include"field.h"
 #include"input.h"
 #include "frequence_time.h"
+#include"powerup.h"
 //game reference libraries
 #include"auxiliary_functions.h"
 #include"game_states.h"
@@ -32,14 +33,7 @@ sf::Music music;
 void draw_texture(SDL_Texture *texture, SDL_Rect texture_rect);
 void draw_background();
 void draw_game_intro();
-void draw_game_menu();
-void draw_play_menu();
-void draw_difficulty_menu();
 void draw_playing();
-void draw_instructions();
-void draw_options_menu();
-void draw_gameplay_options_menu();
-void draw_sound_options_menu();
 
 //game main functions
 void play_game();
@@ -65,13 +59,14 @@ struct object
 	bool hovering;
 };
 object logo, brand, start;
-object score1, score2,display_time;
+object score1, score2, displayed_time;
+int displayed_time_value,start_match_time,time_on_pause,start_pause_time,total_time_on_pause;
 object _object[10];
 short number_of_used_objects;
 //in-game used functions
 void create_text_texture(SDL_Texture* &text_texture,std::string text_to_display, std::string type_of_font, int text_size, SDL_Color text_color);
 int get_font_size(int height_percentage, std::string text);
-void hover_effect(object &_object, SDL_Event input, SDL_Rect top_object_rect, int number_of_objects, int object_number, std::function<void()>draw_function);
+void hover_effect(object &_object, int x, int y, SDL_Rect top_object_rect, int number_of_objects, int object_number, std::function<void()>draw_function);
 void update_object(object &_object, int height_percentage, std::string font_type, SDL_Color color);
 void update_object_and_position(object &_object, int height_percentage, std::string font_type, SDL_Color color, position_of_object position, SDL_Rect top_object_rect, int number_of_objects, int object_number);
 void update_middle_object_position(SDL_Rect top_object_rect, SDL_Rect &object_rect, int number_of_objects, int object_number);
@@ -112,3 +107,5 @@ SDL_Rect null_rect;
 int button_size;
 int title_size;
 int fps;
+input _input;
+SDL_Event _event;

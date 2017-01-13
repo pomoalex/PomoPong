@@ -1,5 +1,6 @@
 #include "source.h"
 
+
 bool is_in_rect(int x, int y, SDL_Rect rect)
 {
 	if (x < rect.x) return 0;
@@ -66,7 +67,7 @@ void set_player_name()
 
 int rate(int difficulty)
 {
-	double completion_percentage = (100 * ((_field.x + _field.width) - _ball.x) / (_field.width)  ) / difficulty;
+	double completion_percentage = (100 * ((_field.x + _field.width) - _ball.x) / (_field.width)) / difficulty;
 	if ((int)completion_percentage == 0)
 		return (int)completion_percentage + 1;
 	return (int)completion_percentage;
@@ -78,7 +79,7 @@ int get_font_size(int height_percentage, std::string text)
 	int reference_height = 65;   //height of a single character when size 100
 	int text_length = text.length();
 	int size = ((_window_height * height_percentage) / 100);
-	if (size * text_length >(int)( _window_width * 0.95))
+	if (size * text_length >(int)(_window_width * 0.95))
 	{
 		size = (int)((0.9 * _window_width) / text_length);
 	}
@@ -131,9 +132,14 @@ void draw_playing()
 	draw_texture(logo.texture, logo.rect);
 	draw_texture(score1.texture, score1.rect);
 	draw_texture(score2.texture, score2.rect);
+	draw_texture(displayed_time.texture, displayed_time.rect);
 	_field.draw(_render_target);
 	paddle1.draw(_render_target);
 	paddle2.draw(_render_target);
+	if (_powerups_state == powerups_state::ON)
+	{
+		
+	}
 	_ball.draw(_render_target);
 	SDL_RenderPresent(_render_target);
 }
@@ -142,7 +148,7 @@ void draw_playing()
 void update_object(object &_object, int height_percentage, std::string font_type, SDL_Color color)
 {
 	_object.size = get_font_size(height_percentage, _object.text);
-	create_text_texture(_object.texture,_object.text, font_type, _object.size, color);
+	create_text_texture(_object.texture, _object.text, font_type, _object.size, color);
 	SDL_QueryTexture(_object.texture, NULL, NULL, &_object.rect.w, &_object.rect.h);
 }
 
@@ -214,18 +220,36 @@ void destroy_used_objects()
 }
 
 
-void used_objects_hover_effect(SDL_Event input)
+void used_objects_hover_effect(int x, int y)
 {
 	if (number_of_used_objects > 1)
-		for(char index = 1;index <number_of_used_objects;index++)
-			hover_effect(_object[index], input, _object[0].rect, number_of_used_objects - 1, index, draw_used_objects);
+		for (char index = 1;index <number_of_used_objects;index++)
+			hover_effect(_object[index], x, y, _object[0].rect, number_of_used_objects - 1, index, draw_used_objects);
+}
+
+
+void update_displayed_time()
+{
+	int auxiliary = displayed_time_value / 1000;
+	displayed_time_value = (SDL_GetTicks() - start_match_time - total_time_on_pause) / 1000;
+	if (auxiliary != displayed_time_value || displayed_time_value == 0)
+	{
+		std::stringstream auxiliary;
+		auxiliary.str("");
+		auxiliary << displayed_time_value;
+		displayed_time.size = get_font_size(4, auxiliary.str());
+		create_text_texture(displayed_time.texture, auxiliary.str(), _font_type1, displayed_time.size, _primary_color);
+		SDL_QueryTexture(displayed_time.texture, NULL, NULL, &displayed_time.rect.w, &displayed_time.rect.h);
+		displayed_time.rect.x = (_window_width - displayed_time.rect.w) / 2;
+		displayed_time.rect.y = logo.rect.y + logo.rect.h + (int)(0.01 * _window_height);
+	}
 }
 
 
 void update_score()
 {
 	std::stringstream auxiliary;
-	auxiliary << player1_name<<" : " << player1_score;
+	auxiliary << player1_name << " : " << player1_score;
 	score1.size = get_font_size(4, auxiliary.str());
 	create_text_texture(score1.texture, auxiliary.str(), _font_type1, score1.size, _primary_color);
 	auxiliary.str("");
@@ -300,6 +324,7 @@ void reset_play_field()
 	update_object_and_position(logo, 7, _font_type1, _primary_color, position_of_object::TOP, null_rect, 0, 0);
 	player1_score = 0;
 	player2_score = 0;
+	displayed_time_value = 0;
 	update_score();
 	reset_field();
 	reset_paddle1();
@@ -307,30 +332,31 @@ void reset_play_field()
 	reset_ball();
 	_field.update_rect();
 	_play_state = play_state::FINISHED;
+	
 }
 
 
-void hover_effect(object &_object, SDL_Event input, SDL_Rect top_object_rect, int number_of_objects, int object_number, std::function<void()>draw_function)
+void hover_effect(object &_object, int x, int y, SDL_Rect top_object_rect, int number_of_objects, int object_number, std::function<void()>draw_function)
 {
-	if (is_in_rect(input.motion.x, input.motion.y, _object.rect))
+	if (is_in_rect(x, y, _object.rect))
 		if (!_object.hovering)
 		{
 			_object.hovering = true;
 			for (int index = 1;index <= hover_animation_size; index += hover_animation_speed)
 			{
-				create_text_texture(_object.texture,_object.text, _font_type1, _object.size + index, _secondary_color);
+				create_text_texture(_object.texture, _object.text, _font_type1, _object.size + index, _secondary_color);
 				SDL_QueryTexture(_object.texture, NULL, NULL, &_object.rect.w, &_object.rect.h);
 				update_middle_object_position(top_object_rect, _object.rect, number_of_objects, object_number);
-				draw_function();	
+				draw_function();
 			}
 		}
-	if (!is_in_rect(input.motion.x, input.motion.y, _object.rect))
+	if (!is_in_rect(x, y, _object.rect))
 		if (_object.hovering)
 		{
 			_object.hovering = false;
 			for (int index = hover_animation_size;index > 0; index -= hover_animation_speed)
 			{
-				create_text_texture(_object.texture,_object.text, _font_type1, _object.size + index, _primary_color);
+				create_text_texture(_object.texture, _object.text, _font_type1, _object.size + index, _primary_color);
 				SDL_QueryTexture(_object.texture, NULL, NULL, &_object.rect.w, &_object.rect.h);
 				update_middle_object_position(top_object_rect, _object.rect, number_of_objects, object_number);
 				draw_function();
@@ -339,7 +365,18 @@ void hover_effect(object &_object, SDL_Event input, SDL_Rect top_object_rect, in
 }
 
 
-void create_text_texture(SDL_Texture* &text_texture,std::string text_to_display, std::string type_of_font, int text_size, SDL_Color text_color)
+void hover_without_effect(object &_object, int x, int y, SDL_Rect top_object_rect, int number_of_objects, int object_number)
+{
+	int index;
+	for (index = 1;index <= hover_animation_size; index += hover_animation_speed);
+	index -= hover_animation_speed;
+	create_text_texture(_object.texture, _object.text, _font_type1, _object.size + index, _secondary_color);
+	SDL_QueryTexture(_object.texture, NULL, NULL, &_object.rect.w, &_object.rect.h);
+	update_middle_object_position(top_object_rect, _object.rect, number_of_objects, object_number);
+}
+
+
+void create_text_texture(SDL_Texture* &text_texture, std::string text_to_display, std::string type_of_font, int text_size, SDL_Color text_color)
 {
 	SDL_Surface* text_surface;
 	text_surface = nullptr;
@@ -449,8 +486,8 @@ void init_game()
 
 void game_loop()
 {
-	game_intro();
-	//_game_state = game_state::MENU;
+	//game_intro();
+	_game_state = game_state::MENU;
 	while (_game_state != game_state::EXIT)
 	{
 		switch (_game_state)
@@ -507,11 +544,11 @@ void game_intro()
 	int delay_time = 20;
 	brand.text = " ";
 
-	create_text_texture(brand.texture,brand.text, _font_type1, brand.size, logo_color);
+	create_text_texture(brand.texture, brand.text, _font_type1, brand.size, logo_color);
 	for (counter = index = 254;counter >= 0;counter -= speed, index -= speed)
 	{
 		logo_color = { 0,index,255,1 };
-		create_text_texture(logo.texture,logo.text, _font_type1, logo.size, logo_color);
+		create_text_texture(logo.texture, logo.text, _font_type1, logo.size, logo_color);
 		draw_game_intro();
 		SDL_Delay(delay_time);
 	}
@@ -521,8 +558,8 @@ void game_intro()
 	for (counter = index = 1;counter <= 255;counter += speed, index += speed)
 	{
 		logo_color = { index,0,255,1 };
-		create_text_texture(logo.texture,logo.text, _font_type1, logo.size, logo_color);
-		create_text_texture(brand.texture,brand.text, _font_type1, brand.size, logo_color);
+		create_text_texture(logo.texture, logo.text, _font_type1, logo.size, logo_color);
+		create_text_texture(brand.texture, brand.text, _font_type1, brand.size, logo_color);
 		draw_game_intro();
 		SDL_Delay(delay_time);
 	}
@@ -670,7 +707,7 @@ void game_intro()
 						hovering_on_start = true;
 						for (index = 1;index <= hover_animation_size; index += hover_animation_speed)
 						{
-							create_text_texture(start.texture,start.text, _font_type1, start.size + index, _secondary_color);
+							create_text_texture(start.texture, start.text, _font_type1, start.size + index, _secondary_color);
 							SDL_QueryTexture(start.texture, NULL, NULL, &start.rect.w, &start.rect.h);
 							start.rect.x = (_window_width - start.rect.w) / 2;
 							start.rect.y = _window_height - (_window_height - brand.rect.y - brand.rect.h + start.rect.h) / 2;
@@ -683,7 +720,7 @@ void game_intro()
 						hovering_on_start = false;
 						for (index = hover_animation_size;index > hover_animation_speed; index -= hover_animation_speed)
 						{
-							create_text_texture(start.texture,start.text, _font_type1, start.size + index, _primary_color);
+							create_text_texture(start.texture, start.text, _font_type1, start.size + index, _primary_color);
 							SDL_QueryTexture(start.texture, NULL, NULL, &start.rect.w, &start.rect.h);
 							start.rect.x = (_window_width - start.rect.w) / 2;
 							start.rect.y = _window_height - (_window_height - brand.rect.y - brand.rect.h + start.rect.h) / 2;
@@ -716,44 +753,45 @@ void game_menu()
 	_object[2].text = "options";
 	_object[3].text = "quit";
 	number_of_used_objects = 4;
-	update_used_objects(title_size,button_size);
+	update_used_objects(title_size, button_size);
 	draw_used_objects();
-	SDL_Event input;
 	while (_game_state == game_state::MENU)
 	{
-		while (SDL_PollEvent(&input))  // while there is some input 
+		_input.update();
+		used_objects_hover_effect(_input.x, _input.y);
+		if (!_input.empty_event)
 		{
-			switch (input.type)
+			switch (_input.event.type)
 			{
 			case SDL_QUIT:
 				_game_state = game_state::EXIT;
 				break;
-			case SDL_MOUSEMOTION: // hovering
-				used_objects_hover_effect(input);
-				break;
 			case SDL_MOUSEBUTTONUP: // pressing button
-				if (is_in_rect(input.motion.x, input.motion.y, _object[1].rect))
+				if (_input.was_mouse_button_pressed(1))
 				{
-					_game_state = game_state::PLAY_MENU;
-					if (_effects_state == effects_state::ON) click_sound.play();
-					SDL_Delay(70);
-				}
-				if (is_in_rect(input.motion.x, input.motion.y, _object[2].rect))
-				{
-					_game_state = game_state::OPTIONS_MENU;
-					if (_effects_state == effects_state::ON) click_sound.play();
-					SDL_Delay(70);
-				}
-				if (is_in_rect(input.motion.x, input.motion.y, _object[3].rect))
-				{
-					_game_state = game_state::EXIT;
-					if (_effects_state == effects_state::ON) click_sound.play();
-					SDL_Delay(70);
+					if (is_in_rect(_input.x, _input.y, _object[1].rect))
+					{
+						_game_state = game_state::PLAY_MENU;
+						if (_effects_state == effects_state::ON) click_sound.play();
+						SDL_Delay(70);
+					}
+					if (is_in_rect(_input.x, _input.y, _object[2].rect))
+					{
+						_game_state = game_state::OPTIONS_MENU;
+						if (_effects_state == effects_state::ON) click_sound.play();
+						SDL_Delay(70);
+					}
+					if (is_in_rect(_input.x, _input.y, _object[3].rect))
+					{
+						_game_state = game_state::EXIT;
+						if (_effects_state == effects_state::ON) click_sound.play();
+						SDL_Delay(70);
+					}
 				}
 				break;
 			case SDL_WINDOWEVENT: // resize 
-				if (input.window.windowID == _windowID)
-					if (input.window.event == SDL_WINDOWEVENT_SIZE_CHANGED)
+				if (_input.event.window.windowID == _windowID)
+					if (_input.event.window.event == SDL_WINDOWEVENT_SIZE_CHANGED)
 					{
 						SDL_GetWindowSize(_window, &_window_width, &_window_height);
 						if (_window_width < _min_window_width) SDL_SetWindowSize(_window, _min_window_width, _window_height);
@@ -764,10 +802,9 @@ void game_menu()
 			default:
 				break;
 			}
-			draw_used_objects();
 		}
+		draw_used_objects();
 	}
-	//destroy_used_objects();
 	number_of_used_objects = 0;
 }
 
@@ -782,48 +819,49 @@ void game_play_menu()
 	number_of_used_objects = 5;
 	update_used_objects(title_size, button_size);
 	draw_used_objects();
-	SDL_Event input;
 	while (_game_state == game_state::PLAY_MENU)
 	{
-		while (SDL_PollEvent(&input))  // while there is some input 
+		_input.update();
+		used_objects_hover_effect(_input.x, _input.y);
+		if (!_input.empty_event)
 		{
-			switch (input.type)
+			switch (_input.event.type)
 			{
 			case SDL_QUIT:
 				_game_state = game_state::EXIT;
 				break;
-			case SDL_MOUSEMOTION: // hovering
-				used_objects_hover_effect(input);
-				break;
 			case SDL_MOUSEBUTTONUP: // pressing button
-				if (is_in_rect(input.motion.x, input.motion.y, _object[1].rect))
+				if (_input.was_mouse_button_pressed(1))
 				{
-					_game_state = game_state::DIFFICULTY_MENU;
-					if (_effects_state == effects_state::ON) click_sound.play();
-					SDL_Delay(70);
+					if (is_in_rect(_input.x, _input.y, _object[1].rect))
+					{
+						_game_state = game_state::DIFFICULTY_MENU;
+						if (_effects_state == effects_state::ON) click_sound.play();
+						SDL_Delay(70);
+					}
+					if (is_in_rect(_input.x, _input.y, _object[2].rect))
+					{
+						_game_state = game_state::MULTIPLAYER;
+						if (_effects_state == effects_state::ON) click_sound.play();
+						SDL_Delay(70);
+					}
+					if (is_in_rect(_input.x, _input.y, _object[3].rect))
+					{
+						_game_state = game_state::INSTRUCTIONS;
+						if (_effects_state == effects_state::ON) click_sound.play();
+						SDL_Delay(70);
+					}
+					if (is_in_rect(_input.x, _input.y, _object[4].rect))
+					{
+						_game_state = game_state::MENU;
+						if (_effects_state == effects_state::ON) click_sound.play();
+						SDL_Delay(70);
+					}
+					break;
 				}
-				if (is_in_rect(input.motion.x, input.motion.y, _object[2].rect))
-				{
-					_game_state = game_state::MULTIPLAYER;
-					if (_effects_state == effects_state::ON) click_sound.play();
-					SDL_Delay(70);
-				}
-				if (is_in_rect(input.motion.x, input.motion.y, _object[3].rect))
-				{
-					_game_state = game_state::INSTRUCTIONS;
-					if (_effects_state == effects_state::ON) click_sound.play();
-					SDL_Delay(70);
-				}
-				if (is_in_rect(input.motion.x, input.motion.y, _object[4].rect))
-				{
-					_game_state = game_state::MENU;
-					if (_effects_state == effects_state::ON) click_sound.play();
-					SDL_Delay(70);
-				}
-				break;
 			case SDL_WINDOWEVENT: // resize 
-				if (input.window.windowID == _windowID)
-					if (input.window.event == SDL_WINDOWEVENT_SIZE_CHANGED)
+				if (_input.event.window.windowID == _windowID)
+					if (_input.event.window.event == SDL_WINDOWEVENT_SIZE_CHANGED)
 					{
 						SDL_GetWindowSize(_window, &_window_width, &_window_height);
 						if (_window_width < _min_window_width) SDL_SetWindowSize(_window, _min_window_width, _window_height);
@@ -834,10 +872,9 @@ void game_play_menu()
 			default:
 				break;
 			}
-			draw_used_objects();
 		}
+		draw_used_objects();
 	}
-	//destroy_used_objects();
 	number_of_used_objects = 0;
 }
 
@@ -852,57 +889,58 @@ void game_difficulty_menu()
 	number_of_used_objects = 5;
 	update_used_objects(title_size, button_size);
 	draw_used_objects();
-	SDL_Event input;
 	while (_game_state == game_state::DIFFICULTY_MENU)
 	{
-		while (SDL_PollEvent(&input))  // while there is some input 
+		_input.update();
+		used_objects_hover_effect(_input.x, _input.y);
+		if (!_input.empty_event)
 		{
-			switch (input.type)
+			switch (_input.event.type)
 			{
 			case SDL_QUIT:
 				_game_state = game_state::EXIT;
 				break;
-			case SDL_MOUSEMOTION: // hovering
-				used_objects_hover_effect(input);
-				break;
 			case SDL_MOUSEBUTTONUP: // pressing button
-				if (is_in_rect(input.motion.x, input.motion.y, _object[1].rect))
+				if (_input.was_mouse_button_pressed(1))
 				{
-					_game_state = game_state::SINGLEPLAYER;
-					_game_difficulty = game_difficulty::EASY;
-					if (_effects_state == effects_state::ON) click_sound.play();
-					difficulty_level = 6;
-					_ball.set_reset_speed(0.4);
-					SDL_Delay(70);
-				}
-				if (is_in_rect(input.motion.x, input.motion.y, _object[2].rect))
-				{
-					_game_state = game_state::SINGLEPLAYER;
-					_game_difficulty = game_difficulty::MEDIUM;
-					if (_effects_state == effects_state::ON) click_sound.play();
-					difficulty_level = 9;
-					_ball.set_reset_speed(0.5);
-					SDL_Delay(70);
-				}
-				if (is_in_rect(input.motion.x, input.motion.y, _object[3].rect))
-				{
-					_game_state = game_state::SINGLEPLAYER;
-					_game_difficulty = game_difficulty::HARD;
-					if (_effects_state == effects_state::ON) click_sound.play();
-					difficulty_level = 12;
-					_ball.set_reset_speed(0.6);
-					SDL_Delay(70);
-				}
-				if (is_in_rect(input.motion.x, input.motion.y, _object[4].rect))
-				{
-					_game_state = game_state::PLAY_MENU;
-					if (_effects_state == effects_state::ON) click_sound.play();
-					SDL_Delay(70);
+					if (is_in_rect(_input.x, _input.y, _object[1].rect))
+					{
+						_game_state = game_state::SINGLEPLAYER;
+						_game_difficulty = game_difficulty::EASY;
+						if (_effects_state == effects_state::ON) click_sound.play();
+						difficulty_level = 6;
+						_ball.set_reset_speed(0.4);
+						SDL_Delay(70);
+					}
+					if (is_in_rect(_input.x, _input.y, _object[2].rect))
+					{
+						_game_state = game_state::SINGLEPLAYER;
+						_game_difficulty = game_difficulty::MEDIUM;
+						if (_effects_state == effects_state::ON) click_sound.play();
+						difficulty_level = 9;
+						_ball.set_reset_speed(0.5);
+						SDL_Delay(70);
+					}
+					if (is_in_rect(_input.x, _input.y, _object[3].rect))
+					{
+						_game_state = game_state::SINGLEPLAYER;
+						_game_difficulty = game_difficulty::HARD;
+						if (_effects_state == effects_state::ON) click_sound.play();
+						difficulty_level = 12;
+						_ball.set_reset_speed(0.6);
+						SDL_Delay(70);
+					}
+					if (is_in_rect(_input.x, _input.y, _object[4].rect))
+					{
+						_game_state = game_state::PLAY_MENU;
+						if (_effects_state == effects_state::ON) click_sound.play();
+						SDL_Delay(70);
+					}
 				}
 				break;
 			case SDL_WINDOWEVENT: // resize 
-				if (input.window.windowID == _windowID)
-					if (input.window.event == SDL_WINDOWEVENT_SIZE_CHANGED)
+				if (_input.event.window.windowID == _windowID)
+					if (_input.event.window.event == SDL_WINDOWEVENT_SIZE_CHANGED)
 					{
 						SDL_GetWindowSize(_window, &_window_width, &_window_height);
 						if (_window_width < _min_window_width) SDL_SetWindowSize(_window, _min_window_width, _window_height);
@@ -913,10 +951,9 @@ void game_difficulty_menu()
 			default:
 				break;
 			}
-			draw_used_objects();
 		}
+		draw_used_objects();
 	}
-	//destroy_used_objects();
 	number_of_used_objects = 0;
 }
 
@@ -935,30 +972,31 @@ void game_instructions()
 	update_used_objects(title_size, 4);
 	draw_used_objects();
 	_object[7].hovering = false;
-	SDL_Event input;
 	while (_game_state == game_state::INSTRUCTIONS)
 	{
-		while (SDL_PollEvent(&input))  // while there is some input 
+		_input.update();
+		hover_effect(_object[7], _input.x, _input.y, _object[0].rect, 7, 7, draw_used_objects);
+		if (!_input.empty_event)
 		{
-			switch (input.type)
+			switch (_input.event.type)
 			{
 			case SDL_QUIT:
 				_game_state = game_state::EXIT;
 				break;
-			case SDL_MOUSEMOTION: // hovering
-				hover_effect(_object[7], input, _object[0].rect, 6, 6, draw_used_objects);
-				break;
 			case SDL_MOUSEBUTTONUP: // pressing button
-				if (is_in_rect(input.motion.x, input.motion.y, _object[7].rect))
+				if (_input.was_mouse_button_pressed(1))
 				{
-					_game_state = game_state::PLAY_MENU;
-					if (_effects_state == effects_state::ON) click_sound.play();
-					SDL_Delay(70);
+					if (is_in_rect(_input.x, _input.y, _object[7].rect))
+					{
+						_game_state = game_state::PLAY_MENU;
+						if (_effects_state == effects_state::ON) click_sound.play();
+						SDL_Delay(70);
+					}
 				}
 				break;
 			case SDL_WINDOWEVENT: // resize 
-				if (input.window.windowID == _windowID)
-					if (input.window.event == SDL_WINDOWEVENT_SIZE_CHANGED)
+				if (_input.event.window.windowID == _windowID)
+					if (_input.event.window.event == SDL_WINDOWEVENT_SIZE_CHANGED)
 					{
 						SDL_GetWindowSize(_window, &_window_width, &_window_height);
 						if (_window_width < _min_window_width) SDL_SetWindowSize(_window, _min_window_width, _window_height);
@@ -969,60 +1007,94 @@ void game_instructions()
 			default:
 				break;
 			}
-			draw_used_objects();
 		}
+		draw_used_objects();
 	}
-	//destroy_used_objects();
 	number_of_used_objects = 0;
 }
 
 
 void game_playing()
 {
+	_powerups_state = powerups_state::ON;
+
 	set_player_name();
 	reset_play_field();
-	input _input;
-	SDL_Event event;
 	frequence_time _time;
+	_play_state = play_state::FINISHED;
+	start_pause_time = SDL_GetTicks();
+	start_match_time = SDL_GetTicks();
+	total_time_on_pause = 0;
+	time_on_pause = 0;
+	bool first_match = true;
+	bool player1_lost;
+	update_displayed_time();
 	while (_game_state == game_state::SINGLEPLAYER || _game_state == game_state::MULTIPLAYER)
 	{
 		_input.update();
-		event = _input.get_event();
 		_time.update();
 		click_sound.setVolume(100);
 		while (_time.accumulated_time >= _time.step_time)
 		{
 			_input.update();
-			event = _input.get_event();
-			switch (event.type)
+			switch (_input.event.type)
 			{
 			case SDL_QUIT:
 				_game_state = game_state::EXIT;
 				break;
 			case SDL_WINDOWEVENT: // resize
-				if (event.window.windowID == _windowID)
-					if (event.window.event == SDL_WINDOWEVENT_SIZE_CHANGED)
+				if (_input.event.window.windowID == _windowID)
+					if (_input.event.window.event == SDL_WINDOWEVENT_SIZE_CHANGED)
 					{
 						SDL_GetWindowSize(_window, &_window_width, &_window_height);
 						if (_window_width < _min_window_width) SDL_SetWindowSize(_window, _min_window_width, _window_height);
 						if (_window_height < _min_window_height) SDL_SetWindowSize(_window, _window_width, _min_window_height);
 						update_object_and_position(logo, button_size, _font_type1, _primary_color, position_of_object::TOP, null_rect, 0, 0);
 						update_score();
+						update_displayed_time();
 						resize_play_field();
 					}
 				break;
 			}
 			if (_play_state != play_state::PLAYING)
-				if (_play_state != play_state::PAUSED)
+			{
+				if (_play_state == play_state::FINISHED)
 				{
 					reset_ball();
+					if (_input.is_key_tapped(SDL_SCANCODE_R))
+					{
+						reset_play_field();
+						start_match_time = SDL_GetTicks();
+						total_time_on_pause = 0;
+						time_on_pause = 0;
+						start_match_time = SDL_GetTicks();
+						if (_effects_state == effects_state::ON) click_sound.play();
+						click_sound.setVolume(0);
+						first_match = true;
+					}
+					if (_input.is_key_tapped(SDL_SCANCODE_ESCAPE))
+					{
+						_play_state = play_state::FINISHED;
+						_game_state = game_state::MENU;
+						if (_effects_state == effects_state::ON) click_sound.play();
+					}
 					if (_input.is_key_tapped(SDL_SCANCODE_SPACE))
 					{
 						_play_state = play_state::PLAYING;
-						_ball.x_speed = _ball.speed * get_random_sign();
+						time_on_pause = SDL_GetTicks() - start_pause_time;
+						total_time_on_pause += time_on_pause;
+						if (first_match)
+						{
+							first_match = false;
+							_ball.x_speed = _ball.speed * get_random_sign();
+						}
+						else if (player1_lost)
+							_ball.x_speed =  -_ball.speed;
+						else _ball.x_speed = _ball.speed;
 						_ball.y_speed = 0;
 					}
 				}
+			}
 			if (_play_state == play_state::PLAYING)
 			{
 				_ball.x += _ball.x_speed;
@@ -1033,12 +1105,20 @@ void game_playing()
 					_ball.y_speed = -_ball.y_speed;
 					if (_effects_state == effects_state::ON) bounce_sound.play();
 				}
-				
 				if (!is_in_rect((int)_ball.x, (int)_ball.y, _field.rect))
 				{
 					_play_state = play_state::FINISHED;
-					if (_ball.x > _field.x + _field.height / 2) player1_score++;
-					else player2_score++;
+					start_pause_time = SDL_GetTicks();
+					if (_ball.x > _field.x + _field.height / 2)
+					{
+						player1_score++;
+						player1_lost = false;
+					}
+					else
+					{
+						player2_score++;
+						player1_lost = true;
+					}
 					update_score();
 					if (_effects_state == effects_state::ON) lost_sound.play();
 				}
@@ -1098,14 +1178,15 @@ void game_playing()
 						}
 					}
 				}
-				if (_input.is_key_tapped(SDL_SCANCODE_P))
+				if (_input.is_key_tapped(SDL_SCANCODE_P)) //start pause
 				{
 					_play_state = play_state::PAUSED;
+					start_pause_time = SDL_GetTicks();
 					if (_effects_state == effects_state::ON) click_sound.play();
 					click_sound.setVolume(0);
 				}
 			}
-			if (_play_state != play_state::PAUSED)
+			if (_play_state != play_state::PAUSED) // moving paddles even when not playing
 			{
 				if (_input.is_key_tapped(SDL_SCANCODE_W))
 				{
@@ -1135,33 +1216,25 @@ void game_playing()
 					}
 				}
 			}
-			if (_play_state == play_state::PAUSED)
+			if (_play_state == play_state::PAUSED) // resume
 				if (_input.is_key_tapped(SDL_SCANCODE_SPACE))
 				{
 					_play_state = play_state::PLAYING;
+					total_time_on_pause += time_on_pause;
+					time_on_pause = 0;
+					update_displayed_time();
 					if (_effects_state == effects_state::ON) click_sound.play();
 				}
-			if (_play_state == play_state::FINISHED)
-			{
-				if (_input.is_key_tapped(SDL_SCANCODE_R))
+			if (fps)
+				if ((1000 / fps) > SDL_GetTicks() - _time.current_time)
 				{
-					reset_play_field();
-					if (_effects_state == effects_state::ON) click_sound.play();
-					click_sound.setVolume(0);
+					SDL_Delay((1000 / fps) - SDL_GetTicks() + _time.current_time);
 				}
-				if (_input.is_key_tapped(SDL_SCANCODE_ESCAPE))
-				{
-					_play_state = play_state::FINISHED;
-					_game_state = game_state::MENU;
-					if (_effects_state == effects_state::ON) click_sound.play();
-				}
-			}
 			_time.accumulated_time -= _time.step_time;
 		}
+		if (_play_state == play_state::PLAYING)
+			update_displayed_time();
 		draw_playing();
-		if (fps != 0)
-			if ((1000 / fps) > SDL_GetTicks() - _time.current_time)
-				SDL_Delay((1000 / fps) - SDL_GetTicks() + _time.current_time);
 	}
 
 }
@@ -1176,42 +1249,43 @@ void game_options_menu()
 	number_of_used_objects = 4;
 	update_used_objects(title_size, button_size);
 	draw_used_objects();
-	SDL_Event input;
 	while (_game_state == game_state::OPTIONS_MENU)
 	{
-		while (SDL_PollEvent(&input))  // while there is some input 
+		_input.update();
+		used_objects_hover_effect(_input.x, _input.y);
+		if (!_input.empty_event)
 		{
-			switch (input.type)
+			switch (_input.event.type)
 			{
 			case SDL_QUIT:
 				_game_state = game_state::EXIT;
 				break;
-			case SDL_MOUSEMOTION: // hovering
-				used_objects_hover_effect(input);
-				break;
 			case SDL_MOUSEBUTTONUP: // pressing button
-				if (is_in_rect(input.motion.x, input.motion.y, _object[1].rect))
+				if (_input.was_mouse_button_pressed(1))
 				{
-					_game_state = game_state::GAMEPLAY_OPTIONS;
-					if (_effects_state == effects_state::ON) click_sound.play();
-					SDL_Delay(70);
-				}
-				if (is_in_rect(input.motion.x, input.motion.y, _object[2].rect))
-				{
-					_game_state = game_state::SOUND_OPTIONS;
-					if (_effects_state == effects_state::ON) click_sound.play();
-					SDL_Delay(70);
-				}
-				if (is_in_rect(input.motion.x, input.motion.y, _object[3].rect))
-				{
-					_game_state = game_state::MENU;
-					if (_effects_state == effects_state::ON) click_sound.play();
-					SDL_Delay(70);
+					if (is_in_rect(_input.x, _input.y, _object[1].rect))
+					{
+						_game_state = game_state::GAMEPLAY_OPTIONS;
+						if (_effects_state == effects_state::ON) click_sound.play();
+						SDL_Delay(70);
+					}
+					if (is_in_rect(_input.x, _input.y, _object[2].rect))
+					{
+						_game_state = game_state::SOUND_OPTIONS;
+						if (_effects_state == effects_state::ON) click_sound.play();
+						SDL_Delay(70);
+					}
+					if (is_in_rect(_input.x, _input.y, _object[3].rect))
+					{
+						_game_state = game_state::MENU;
+						if (_effects_state == effects_state::ON) click_sound.play();
+						SDL_Delay(70);
+					}
 				}
 				break;
 			case SDL_WINDOWEVENT: // resize 
-				if (input.window.windowID == _windowID)
-					if (input.window.event == SDL_WINDOWEVENT_SIZE_CHANGED)
+				if (_input.event.window.windowID == _windowID)
+					if (_input.event.window.event == SDL_WINDOWEVENT_SIZE_CHANGED)
 					{
 						SDL_GetWindowSize(_window, &_window_width, &_window_height);
 						if (_window_width < _min_window_width) SDL_SetWindowSize(_window, _min_window_width, _window_height);
@@ -1222,10 +1296,9 @@ void game_options_menu()
 			default:
 				break;
 			}
-			draw_used_objects();
 		}
+		draw_used_objects();
 	}
-	//destroy_used_objects();
 	number_of_used_objects = 0;
 }
 
@@ -1239,66 +1312,69 @@ void sound_options_menu()
 	number_of_used_objects = 4;
 	update_used_objects(title_size, button_size);
 	draw_used_objects();
-	SDL_Event input;
 	while (_game_state == game_state::SOUND_OPTIONS)
 	{
-		while (SDL_PollEvent(&input))  // while there is some input 
+		_input.update();
+		used_objects_hover_effect(_input.x, _input.y);
+		if (!_input.empty_event)
 		{
-			switch (input.type)
+			switch (_input.event.type)
 			{
 			case SDL_QUIT:
 				_game_state = game_state::EXIT;
 				break;
-			case SDL_MOUSEMOTION: // hovering
-				used_objects_hover_effect(input);
-				break;
 			case SDL_MOUSEBUTTONUP: // pressing button
-				if (is_in_rect(input.motion.x, input.motion.y, _object[1].rect))
+				if (_input.was_mouse_button_pressed(1))
 				{
-					switch (_music_state)
+					if (is_in_rect(_input.x, _input.y, _object[1].rect))
 					{
-					case music_state::ON:
-						music.stop();
-						_object[1].text = "music off";
-						_music_state = music_state::OFF;
-						break;
-					case music_state::OFF:
-						music.play();
-						_object[1].text = "music on";
-						_music_state = music_state::ON;
-						break;
+						switch (_music_state)
+						{
+						case music_state::ON:
+							music.stop();
+							_object[1].text = "music off";
+							_music_state = music_state::OFF;
+							break;
+						case music_state::OFF:
+							music.play();
+							_object[1].text = "music on";
+							_music_state = music_state::ON;
+							break;
+						}
+						update_object_and_position(_object[1], button_size, _font_type1, _primary_color, position_of_object::MIDDLE, _object[0].rect, 3, 1);
+						hover_without_effect(_object[1], _input.x, _input.y, _object[0].rect, number_of_used_objects - 1, 1);
+						if (_effects_state == effects_state::ON) click_sound.play();
+						SDL_Delay(70);
 					}
-					update_object_and_position(_object[1], button_size, _font_type1, _primary_color, position_of_object::MIDDLE, _object[0].rect, 3, 1);
-					if (_effects_state == effects_state::ON) click_sound.play();
-					SDL_Delay(70);
-				}
-				if (is_in_rect(input.motion.x, input.motion.y, _object[2].rect))
-				{
-					switch (_effects_state)
+					if (is_in_rect(_input.x, _input.y, _object[2].rect))
 					{
-					case effects_state::ON:
-						_object[2].text = "sound effects off";
-						_effects_state = effects_state::OFF;
-						break;
-					case effects_state::OFF:
-						_object[2].text = "sound effects on";
-						_effects_state = effects_state::ON;
-						break;
+						switch (_effects_state)
+						{
+						case effects_state::ON:
+							_object[2].text = "sound effects off";
+							_effects_state = effects_state::OFF;
+							break;
+						case effects_state::OFF:
+							_object[2].text = "sound effects on";
+							_effects_state = effects_state::ON;
+							break;
+						}
+						update_object_and_position(_object[2], button_size, _font_type1, _primary_color, position_of_object::MIDDLE, _object[0].rect, 3, 2);
+						hover_without_effect(_object[2], _input.x, _input.y, _object[0].rect, number_of_used_objects - 1, 2);
+						if (_effects_state == effects_state::ON) click_sound.play();
+						SDL_Delay(70);
 					}
-					update_object_and_position(_object[2], button_size, _font_type1, _primary_color, position_of_object::MIDDLE, _object[0].rect, 3, 2);
-					if (_effects_state == effects_state::ON) click_sound.play();
-					SDL_Delay(70);
-				}
-				if (is_in_rect(input.motion.x, input.motion.y, _object[3].rect))
-				{
-					_game_state = game_state::OPTIONS_MENU;
-					if (_effects_state == effects_state::ON) click_sound.play();
-					SDL_Delay(70);
+					if (is_in_rect(_input.x, _input.y, _object[3].rect))
+					{
+						_game_state = game_state::OPTIONS_MENU;
+						if (_effects_state == effects_state::ON) click_sound.play();
+						SDL_Delay(70);
+					}
 				}
 				break;
 			case SDL_WINDOWEVENT: // resize 
-				if (input.window.windowID == _windowID)
-					if (input.window.event == SDL_WINDOWEVENT_SIZE_CHANGED)
+				if (_input.event.window.windowID == _windowID)
+					if (_input.event.window.event == SDL_WINDOWEVENT_SIZE_CHANGED)
 					{
 						SDL_GetWindowSize(_window, &_window_width, &_window_height);
 						if (_window_width < _min_window_width) SDL_SetWindowSize(_window, _min_window_width, _window_height);
@@ -1309,10 +1385,9 @@ void sound_options_menu()
 			default:
 				break;
 			}
-			draw_used_objects();
 		}
+		draw_used_objects();
 	}
-	//destroy_used_objects();
 	number_of_used_objects = 0;
 }
 
@@ -1325,47 +1400,49 @@ void gameplay_options_menu()
 	number_of_used_objects = 3;
 	update_used_objects(title_size, button_size);
 	draw_used_objects();
-	SDL_Event input;
 	while (_game_state == game_state::GAMEPLAY_OPTIONS)
 	{
-		while (SDL_PollEvent(&input))  // while there is some input 
+		_input.update();
+		used_objects_hover_effect(_input.x, _input.y);
+		if (!_input.empty_event)
 		{
-			switch (input.type)
+			switch (_input.event.type)
 			{
 			case SDL_QUIT:
 				_game_state = game_state::EXIT;
 				break;
-			case SDL_MOUSEMOTION: // hovering
-				used_objects_hover_effect(input);
-				break;
 			case SDL_MOUSEBUTTONUP: // pressing button
-				if (is_in_rect(input.motion.x, input.motion.y, _object[1].rect))
+				if (_input.was_mouse_button_pressed(1))
 				{
-					switch (_assist_state)
+					if (is_in_rect(_input.x, _input.y, _object[1].rect))
 					{
-					case assist_state::ON:
-						_object[1].text = "assist off";
-						_assist_state = assist_state::OFF;
-						break;
-					case assist_state::OFF:
-						_object[1].text = "assist on";
-						_assist_state = assist_state::ON;
-						break;
+						switch (_assist_state)
+						{
+						case assist_state::ON:
+							_object[1].text = "assist off";
+							_assist_state = assist_state::OFF;
+							break;
+						case assist_state::OFF:
+							_object[1].text = "assist on";
+							_assist_state = assist_state::ON;
+							break;
+						}
+						update_object_and_position(_object[1], button_size, _font_type1, _primary_color, position_of_object::MIDDLE, _object[0].rect, 2, 1);
+						hover_without_effect(_object[1], _input.x, _input.y, _object[0].rect, number_of_used_objects - 1, 1);
+						if (_effects_state == effects_state::ON) click_sound.play();
+						SDL_Delay(70);
 					}
-					update_object_and_position(_object[1], button_size, _font_type1, _primary_color, position_of_object::MIDDLE, _object[0].rect, 2, 1);
-					if (_effects_state == effects_state::ON) click_sound.play();
-					SDL_Delay(70);
-				}
-				if (is_in_rect(input.motion.x, input.motion.y, _object[2].rect))
-				{
-					_game_state = game_state::OPTIONS_MENU;
-					if (_effects_state == effects_state::ON) click_sound.play();
-					SDL_Delay(70);
+					if (is_in_rect(_input.x, _input.y, _object[2].rect))
+					{
+						_game_state = game_state::OPTIONS_MENU;
+						if (_effects_state == effects_state::ON) click_sound.play();
+						SDL_Delay(70);
+					}
 				}
 				break;
 			case SDL_WINDOWEVENT: // resize 
-				if (input.window.windowID == _windowID)
-					if (input.window.event == SDL_WINDOWEVENT_SIZE_CHANGED)
+				if (_input.event.window.windowID == _windowID)
+					if (_input.event.window.event == SDL_WINDOWEVENT_SIZE_CHANGED)
 					{
 						SDL_GetWindowSize(_window, &_window_width, &_window_height);
 						if (_window_width < _min_window_width) SDL_SetWindowSize(_window, _min_window_width, _window_height);
@@ -1384,7 +1461,7 @@ void gameplay_options_menu()
 }
 
 #undef main
-int main(int argc,char*argv[])
+int main(int argc, char*argv[])
 {
 	constructor();
 	play_game();

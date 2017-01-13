@@ -34,7 +34,7 @@ bool input:: is_key_tapped(SDL_Scancode key)
 }
 
 
-bool input:: is_mouse_button_down(int button_number)
+bool input:: was_mouse_button_pressed(int button_number)
 {
 	if (button_number <= 3 && button_number >= 1)
 		return mouse[button_number - 1];
@@ -42,22 +42,26 @@ bool input:: is_mouse_button_down(int button_number)
 }
 
 
-SDL_Event input:: get_event()
-{
-	return event;
-}
-
-
 void input:: get_mouse_buttons_state()
 {
-	SDL_PollEvent(&event);
-	switch (event.type)
+	if (SDL_PollEvent(&event))
 	{
-	case  SDL_MOUSEBUTTONDOWN:
-		mouse[event.button.button - 1] = true; // 1 = left  2 = center  3 = right
-		break;
-	case  SDL_MOUSEBUTTONUP:
-		mouse[event.button.button - 1] = false;
-		break;
+		empty_event = false;
+		switch (event.type)
+		{
+		case  SDL_MOUSEBUTTONUP:
+			switch (event.button.button)// 1 = left  2 = center  3 = right
+			{
+			case SDL_BUTTON_LEFT:
+				mouse[0] = true;
+			case SDL_BUTTON_MIDDLE:
+				mouse[1] = true;
+			case SDL_BUTTON_RIGHT:
+				mouse[2] = true;
+			}
+			break;
+			break;
+		}
 	}
+	else empty_event = true;
 }
