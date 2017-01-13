@@ -488,6 +488,8 @@ void destructor() //class destructor
 	SDL_DestroyTexture(start.texture);
 	SDL_DestroyTexture(score1.texture);
 	SDL_DestroyTexture(score2.texture);
+	number_of_used_objects = 9;
+	destroy_used_objects();
 	SystemParametersInfo(SPI_SETKEYBOARDDELAY, 1, 0, 0);
 	TTF_Quit();
 	SDL_Quit();
@@ -518,6 +520,14 @@ void init_audio()
 	music.setVolume(20);
 	if (_music_state == music_state::ON)
 		music.play();
+}
+
+
+void update_fps()
+{
+	SDL_DisplayMode mode;
+	SDL_GetDesktopDisplayMode(0, &mode);
+	fps = mode.refresh_rate;
 }
 
 
@@ -1252,6 +1262,7 @@ void game_playing()
 	update_displayed_time();
 	while (_game_state == game_state::PLAYING)
 	{
+		update_fps();
 		_input.update();
 		_time.update();
 		click_sound.setVolume(100);
@@ -1315,6 +1326,7 @@ void game_playing()
 			if (_input.is_key_tapped(SDL_SCANCODE_ESCAPE))
 					{
 						_play_state = play_state::PAUSED;
+						start_pause_time = SDL_GetTicks();
 						game_exit_menu();
 						if (_game_state == game_state::MENU)
 							_play_state = play_state::FINISHED;
@@ -1328,6 +1340,7 @@ void game_playing()
 				if ((int)_ball.y - _ball.radius == _field.y || (int)_ball.y + _ball.radius == _field.y + _field.height) //wall collision
 				{
 					_ball.y_speed = -_ball.y_speed;
+					if (_ball.y_speed == 0) _ball.y_speed = 0.01;
 					if (_effects_state == effects_state::ON) bounce_sound.play();
 				}
 				if (!is_in_rect((int)_ball.x, (int)_ball.y, _field.rect))
@@ -1452,7 +1465,7 @@ void game_playing()
 					if (_effects_state == effects_state::ON) click_sound.play();
 				}
 			if (fps)
-				if ((1000 / fps) > SDL_GetTicks() - _time.current_time)
+				if ((1000 / fps) > (SDL_GetTicks() - _time.current_time))
 				{
 					int delay = (1000 / fps) - SDL_GetTicks() + _time.current_time - 16;
 					if (delay > 0) SDL_Delay(delay);
